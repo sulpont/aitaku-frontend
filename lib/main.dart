@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'search.dart'; // search.dart をインポート
 
 void main() {
   runApp(const MyApp());
@@ -61,7 +62,13 @@ class WelcomeScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
                       child: ElevatedButton(
                         onPressed: () {
-                          // アカウント作成処理を追加
+                          // search.dart の画面に遷移する
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EventSelectorPage(),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF1A13B), // ボタンの色を設定
