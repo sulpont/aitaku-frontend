@@ -37,12 +37,21 @@ class CustomBottomNavBar extends StatelessWidget {
           children: [
             _buildNavItem(Icons.home, 'ホーム', Colors.blue),
             _buildNavItem(Icons.favorite_border, 'お気に入り', Colors.black),
-            const SizedBox(
-              width: 60,
-              child: Text(
-                'あいタク',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => AiTakuConditionSpecification()),
+                );
+              },
+              child: const SizedBox(
+                width: 60,
+                child: Text(
+                  'あいタク',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12),
+                ),
               ),
             ),
             _buildNavItem(Icons.access_time, '予約一覧', Colors.black),
@@ -116,7 +125,9 @@ class _EventSelectorPageState extends State<EventSelectorPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.pop(context); // 現在のページをポップして前のページに戻る
+          },
         ),
         title: const Text('イベントを選ぶ', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
@@ -140,11 +151,30 @@ class _EventSelectorPageState extends State<EventSelectorPage> {
                     events: filteredEvents,
                     onFilterApplied: _applyFilters),
           ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              onPressed: _showFilterModal,
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.pink,
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: Colors.pink),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: const Text('絞り込み検索'),
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: const CustomBottomNavBar(),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showFilterModal, // モーダル表示関数を呼び出し
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => AiTakuConditionSpecification()),
+          );
+        },
         backgroundColor: Colors.pink,
         child: const Icon(
           Icons.local_taxi,
