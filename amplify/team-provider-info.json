@@ -1,0 +1,20 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-aitakufrontend-dev-2a8c4-authRole",
+      "UnauthRoleArn": "arn:aws:iam::024848467795:role/amplify-aitakufrontend-dev-2a8c4-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::024848467795:role/amplify-aitakufrontend-dev-2a8c4-authRole",
+      "Region": "ap-northeast-3",
+      "DeploymentBucketName": "amplify-aitakufrontend-dev-2a8c4-deployment",
+      "UnauthRoleName": "amplify-aitakufrontend-dev-2a8c4-unauthRole",
+      "StackName": "amplify-aitakufrontend-dev-2a8c4",
+      "StackId": "arn:aws:cloudformation:ap-northeast-3:024848467795:stack/amplify-aitakufrontend-dev-2a8c4/4aeb2310-71e8-11ef-bed3-0a170c7fc0cd",
+      "AmplifyAppId": "dankh7hztojb7"
+    },
+    "categories": {
+      "auth": {
+        "aitakufrontend82775f8a82775f8a": {}
+      }
+    }
+  }
+}

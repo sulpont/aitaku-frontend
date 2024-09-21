@@ -1,0 +1,81 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class RDSConnectionTestPage extends StatefulWidget {
+  const RDSConnectionTestPage({Key? key}) : super(key: key);
+
+  @override
+  _RDSConnectionTestPageState createState() => _RDSConnectionTestPageState();
+}
+
+class _RDSConnectionTestPageState extends State<RDSConnectionTestPage> {
+  String? email;
+  String status = "Enter a username to fetch email";
+  final TextEditingController _controller = TextEditingController(); // ユーザー名入力用
+
+  Future<void> fetchEmail(String userName) async {
+    final url = 'http://15.152.251.125:8000/get-email/$userName';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          email = data['email'];
+          status = "Email fetched successfully";
+        });
+      } else {
+        setState(() {
+          email = null; // エラーが発生した場合はemailを非表示にする
+          status = "Failed to fetch email. Status code: ${response.statusCode}";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        email = null; // エラー時にemailを非表示にする
+        status = "Error occurred: $e";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('RDS Connection Test'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(status), // ステータスメッセージを表示
+            SizedBox(height: 20),
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                labelText: 'Enter username',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                fetchEmail(_controller.text);
+              },
+              child: Text('Fetch Email'),
+            ),
+            SizedBox(height: 20),
+            // emailがnullでない場合のみ表示、そうでない場合は"None"を表示
+            if (email != null)
+              Text("Email: $email")
+            else
+              Text("Email: None"), // エラー時または初期状態での表示
+          ],
+        ),
+      ),
+    );
+  }
+}
