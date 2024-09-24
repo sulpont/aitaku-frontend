@@ -3,6 +3,7 @@ import 'welcome_screen.dart';
 import 'create_account.dart';
 import 'sign_in.dart';
 import 'home.dart';
+import 'search.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
         '/create-account': (context) => const CreateAccount(),
         '/sign-in': (context) => const SignIn(),
         '/home': (context) => const HomeScreen(),
+        '/search': (context) => const EventSelectorPage(),
       },
       onUnknownRoute: (settings) => MaterialPageRoute(
         builder: (context) => const Scaffold(

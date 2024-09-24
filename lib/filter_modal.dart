@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'genre_selection_modal.dart';
-import 'region_selection_modal.dart';
+import 'genre_selection_modal.dart' as genre; // エイリアスをつける
+import 'region_selection_modal.dart' as region; // エイリアスをつける
 
 class FilterModal extends StatefulWidget {
   final Function(Map<String, dynamic>) onApplyFilters;
@@ -16,7 +16,7 @@ class FilterModal extends StatefulWidget {
 class _FilterModalState extends State<FilterModal> {
   Map<String, dynamic> filters = {
     'genre': <String>[],
-    'region': <String>[], // List<String> に変更
+    'region': <String>[],
     'startDate': DateTime.now(),
     'endDate': DateTime.now().add(const Duration(days: 30)),
   };
@@ -26,68 +26,53 @@ class _FilterModalState extends State<FilterModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF5F5F5), // さらに薄いグレー
+        title: const Text(
+          '絞り込み検索',
+          style: TextStyle(color: Colors.black), // 黒い文字色
         ),
-      ),
-      child: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildFilterSection(
-                    'ジャンル',
-                    filters['genre'].isEmpty
-                        ? 'すべて'
-                        : filters['genre'].join(', '),
-                    _showGenreSelectionModal),
-                _buildFilterSection(
-                    '地域',
-                    filters['region'].isEmpty
-                        ? 'すべて'
-                        : filters['region'].join(', '),
-                    _showRegionSelectionModal),
-                _buildDateSection(),
-                if (showStartCalendar) _buildCalendar(true),
-                if (showEndCalendar) _buildCalendar(false),
-              ],
-            ),
-          ),
-          _buildSearchButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.close, color: Colors.grey),
-          ),
-          const Text(
-            '絞り込み検索',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          GestureDetector(
-            onTap: _resetFilters,
+        actions: [
+          TextButton(
+            onPressed: _resetFilters,
             child: const Text(
               '条件リセット',
               style: TextStyle(color: Colors.grey),
             ),
           ),
         ],
+        elevation: 0,
+      ),
+      body: Container(
+        color: Colors.white, // 背景を白に設定
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildFilterSection(
+                      'ジャンル',
+                      filters['genre'].isEmpty
+                          ? 'すべて'
+                          : filters['genre'].join(', '),
+                      _showGenreSelectionModal),
+                  _buildFilterSection(
+                      '地域',
+                      filters['region'].isEmpty
+                          ? 'すべて'
+                          : filters['region'].join(', '),
+                      _showRegionSelectionPage),
+                  _buildDateSection(),
+                  if (showStartCalendar) _buildCalendar(true),
+                  if (showEndCalendar) _buildCalendar(false),
+                ],
+              ),
+            ),
+            _buildSearchButton(),
+          ],
+        ),
       ),
     );
   }
@@ -101,7 +86,7 @@ class _FilterModalState extends State<FilterModal> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: Color(0xFFFF0059), // 色を変更
           ),
         ),
         const SizedBox(height: 8),
@@ -127,31 +112,62 @@ class _FilterModalState extends State<FilterModal> {
   }
 
   void _showGenreSelectionModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => GenreSelectionModal(
-        initialSelectedGenres:
-            List<String>.from(filters['genre']), // List<String> にキャスト
-        onGenresSelected: (selectedGenres) {
-          setState(() {
-            filters['genre'] = selectedGenres;
-          });
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            genre.GenreSelectionPage(
+          // エイリアスを使って呼び出す
+          initialSelectedGenres: List<String>.from(filters['genre']),
+          onGenresSelected: (selectedGenres) {
+            setState(() {
+              filters['genre'] = selectedGenres;
+            });
+          },
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0); // 右から左にスライド
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
         },
       ),
     );
   }
 
-  void _showRegionSelectionModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => RegionSelectionModal(
-        initialSelectedRegions: List<String>.from(filters['region']),
-        onRegionsSelected: (selectedRegions) {
-          setState(() {
-            filters['region'] = selectedRegions;
-          });
+  void _showRegionSelectionPage() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            region.RegionSelectionPage(
+          // エイリアスを使って呼び出す
+          initialSelectedRegions: List<String>.from(filters['region']),
+          onRegionsSelected: (selectedRegions) {
+            setState(() {
+              filters['region'] = selectedRegions;
+            });
+          },
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0); // 右から左にスライド
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
         },
       ),
     );
@@ -166,7 +182,7 @@ class _FilterModalState extends State<FilterModal> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: Color(0xFFFF0059), // 色を変更
           ),
         ),
         const SizedBox(height: 8),
@@ -219,38 +235,60 @@ class _FilterModalState extends State<FilterModal> {
 
   Widget _buildCalendar(bool isStartDate) {
     return TableCalendar(
-      firstDay: DateTime.now(),
-      lastDay: DateTime.now().add(const Duration(days: 365)),
-      focusedDay: isStartDate ? filters['startDate'] : filters['endDate'],
-      selectedDayPredicate: (day) => isSameDay(
-          isStartDate ? filters['startDate'] : filters['endDate'], day),
-      onDaySelected: (selectedDay, focusedDay) {
-        setState(() {
-          if (isStartDate) {
-            filters['startDate'] = selectedDay;
-            showStartCalendar = false;
-          } else {
-            filters['endDate'] = selectedDay;
-            showEndCalendar = false;
-          }
-        });
-      },
-    );
+        firstDay: DateTime.now(),
+        lastDay: DateTime.now().add(const Duration(days: 365)),
+        focusedDay: isStartDate ? filters['startDate'] : filters['endDate'],
+        selectedDayPredicate: (day) => isSameDay(
+            isStartDate ? filters['startDate'] : filters['endDate'], day),
+        onDaySelected: (selectedDay, focusedDay) {
+          setState(() {
+            if (isStartDate) {
+              filters['startDate'] = selectedDay;
+              showStartCalendar = false;
+            } else {
+              filters['endDate'] = selectedDay;
+              showEndCalendar = false;
+            }
+          });
+        },
+        headerStyle: HeaderStyle(
+          formatButtonVisible: false, // FormatButtonを非表示にする
+          titleCentered: true, // タイトルを中央に配置する
+        ));
   }
 
   Widget _buildSearchButton() {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: ElevatedButton(
-        onPressed: () {
-          widget.onApplyFilters(filters);
-          Navigator.pop(context);
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          minimumSize: const Size(double.infinity, 50),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.5, // ボタンの幅を50%に設定
+        child: ElevatedButton(
+          onPressed: () {
+            widget.onApplyFilters(filters);
+            Navigator.pop(context);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shadowColor: Colors.black.withOpacity(0.15), // 控えめなドロップシャドウ
+            elevation: 10,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white, // 白い太字に設定
+            ),
+          ),
+          child: const Text(
+            '検索する',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-        child: const Text('検索する', style: TextStyle(fontSize: 18)),
       ),
     );
   }
@@ -259,7 +297,7 @@ class _FilterModalState extends State<FilterModal> {
     setState(() {
       filters = {
         'genre': <String>[],
-        'region': <String>[], // 空のList<String>にリセット
+        'region': <String>[],
         'startDate': DateTime.now(),
         'endDate': DateTime.now().add(const Duration(days: 30)),
       };

@@ -218,6 +218,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           setState(() {
             _currentIndex = index;
+            if (_currentIndex == 2) {
+              // あいタクするボタンが押されたら search.dart へ遷移
+              Navigator.pushNamed(context, '/search');
+            }
           });
         },
         items: const [

@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 
-class RegionSelectionModal extends StatefulWidget {
+class RegionSelectionPage extends StatefulWidget {
   final List<String> initialSelectedRegions;
   final Function(List<String>) onRegionsSelected;
 
-  const RegionSelectionModal({
+  const RegionSelectionPage({
     Key? key,
     required this.initialSelectedRegions,
     required this.onRegionsSelected,
   }) : super(key: key);
 
   @override
-  _RegionSelectionModalState createState() => _RegionSelectionModalState();
+  _RegionSelectionPageState createState() => _RegionSelectionPageState();
 }
 
-class _RegionSelectionModalState extends State<RegionSelectionModal> {
+class _RegionSelectionPageState extends State<RegionSelectionPage> {
   late List<String> selectedRegions;
+  List<String> expandedCategories = [];
 
-  // 各地域と対応する都道府県のリスト
   final Map<String, List<String>> regionMap = {
     '北海道': ['北海道'],
     '東北': ['青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'],
@@ -30,105 +30,178 @@ class _RegionSelectionModalState extends State<RegionSelectionModal> {
     '九州・沖縄': ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'],
   };
 
-  final Map<String, bool> expandedRegions = {};
-
   @override
   void initState() {
     super.initState();
-    selectedRegions = List.from(widget.initialSelectedRegions);
-
-    // 各地域の展開状態を初期化
-    regionMap.keys.forEach((region) {
-      expandedRegions[region] = false;
-    });
+    selectedRegions = List<String>.from(widget.initialSelectedRegions);
   }
 
-  // 地域と都道府県の選択状態をトグルする
-  void toggleRegion(String region) {
+  void toggleCategoryExpansion(String category) {
     setState(() {
-      expandedRegions[region] = !expandedRegions[region]!; // 展開状態をトグル
-    });
-  }
-
-  void togglePrefecture(String prefecture) {
-    setState(() {
-      if (selectedRegions.contains(prefecture)) {
-        selectedRegions.remove(prefecture);
+      if (expandedCategories.contains(category)) {
+        expandedCategories.remove(category);
       } else {
-        selectedRegions.add(prefecture);
+        expandedCategories.add(category);
       }
     });
   }
 
-  void resetSelection() {
+  void toggleRegionSelection(String region) {
     setState(() {
-      selectedRegions.clear();
+      if (selectedRegions.contains(region)) {
+        selectedRegions.remove(region);
+      } else {
+        selectedRegions.add(region);
+      }
     });
+  }
+
+  bool isCategoryIndeterminate(List<String> subRegions) {
+    int selectedCount = subRegions
+        .where((subRegion) => selectedRegions.contains(subRegion))
+        .length;
+    return selectedCount > 0 && selectedCount < subRegions.length;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+        backgroundColor: const Color(0xFFF5F5F5), // 薄いグレーの背景色
+        title: const Text(
+          '地域を選ぶ',
+          style: TextStyle(color: Colors.black), // 黒い文字色
         ),
-        title: const Text('地域を選ぶ'),
         actions: [
           TextButton(
-            onPressed: resetSelection,
-            child: const Text('条件リセット'),
-          ),
-        ],
-      ),
-      body: ListView(
-        children: regionMap.keys.map((region) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: Text(region),
-                trailing: Icon(
-                  expandedRegions[region]!
-                      ? Icons.expand_less
-                      : Icons.expand_more,
-                ),
-                onTap: () => toggleRegion(region),
-              ),
-              if (expandedRegions[region]!)
-                Column(
-                  children: regionMap[region]!.map((prefecture) {
-                    return CheckboxListTile(
-                      title: Text(prefecture),
-                      value: selectedRegions.contains(prefecture),
-                      onChanged: (_) => togglePrefecture(prefecture),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    );
-                  }).toList(),
-                ),
-            ],
-          );
-        }).toList(),
-      ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              onPressed: () {
-                widget.onRegionsSelected(selectedRegions);
-                Navigator.pop(context);
-              },
-              child: const Text('検索する'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
+            onPressed: () {
+              setState(() {
+                selectedRegions.clear(); // 選択状態をリセット
+              });
+            },
+            child: const Text(
+              '条件リセット',
+              style: TextStyle(color: Colors.grey),
             ),
           ),
         ],
+        elevation: 0,
+      ),
+      body: Container(
+        color: Colors.white, // 背景を白に設定
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: regionMap.length,
+                itemBuilder: (context, index) {
+                  final category = regionMap.keys.elementAt(index);
+                  final subRegions = regionMap[category]!;
+                  final isExpanded = expandedCategories.contains(category);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        title: Text(
+                          category,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFF0059), // 指定色に変更
+                          ),
+                        ),
+                        trailing: Checkbox(
+                          tristate: true, // indeterminate状態をサポート
+                          value: subRegions.every((subRegion) =>
+                                  selectedRegions.contains(subRegion))
+                              ? true
+                              : isCategoryIndeterminate(subRegions)
+                                  ? null
+                                  : false,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                selectedRegions.addAll(subRegions);
+                              } else {
+                                selectedRegions.removeWhere(
+                                    (region) => subRegions.contains(region));
+                              }
+                            });
+                          },
+                        ),
+                        leading: GestureDetector(
+                          onTap: () => toggleCategoryExpansion(category),
+                          child: Icon(
+                            isExpanded ? Icons.remove : Icons.add,
+                            color: Colors.black, // プラス・マイナスアイコンを黒字に
+                          ),
+                        ),
+                      ),
+                      if (isExpanded)
+                        Column(
+                          children: subRegions.map((subRegion) {
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 32.0),
+                              child: ListTile(
+                                title: Text(subRegion),
+                                trailing: Checkbox(
+                                  value: selectedRegions.contains(subRegion),
+                                  onChanged: (bool? value) {
+                                    toggleRegionSelection(subRegion);
+                                  },
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                width: double.infinity, // ボタンの幅を元に戻す
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15), // 控えめなドロップシャドウ
+                      spreadRadius: 1,
+                      blurRadius: 12,
+                      offset: const Offset(7, 7), // 右と下にドロップシャドウ
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: () {
+                    widget.onRegionsSelected(selectedRegions);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white, // 白い太字に設定
+                    ),
+                  ),
+                  child: const Text(
+                    '選択する',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
