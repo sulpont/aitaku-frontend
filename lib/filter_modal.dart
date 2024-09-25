@@ -3,11 +3,17 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'genre_selection_modal.dart' as genre; // エイリアスをつける
 import 'region_selection_modal.dart' as region; // エイリアスをつける
+import 'nav_bar.dart'; // カスタムナビゲーションバーをインポート
+import 'home.dart'; // ホーム画面のインポート
+import 'search.dart'; // 検索画面のインポート
 
 class FilterModal extends StatefulWidget {
   final Function(Map<String, dynamic>) onApplyFilters;
+  final Map<String, dynamic>? initialFilters;
 
-  const FilterModal({Key? key, required this.onApplyFilters}) : super(key: key);
+  const FilterModal(
+      {Key? key, required this.onApplyFilters, this.initialFilters})
+      : super(key: key);
 
   @override
   _FilterModalState createState() => _FilterModalState();
@@ -25,13 +31,27 @@ class _FilterModalState extends State<FilterModal> {
   bool showEndCalendar = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.initialFilters != null) {
+      filters = {
+        'genre': widget.initialFilters!['genre'] ?? <String>[],
+        'region': widget.initialFilters!['region'] ?? <String>[],
+        'startDate': widget.initialFilters!['startDate'] ?? DateTime.now(),
+        'endDate': widget.initialFilters!['endDate'] ??
+            DateTime.now().add(const Duration(days: 30)),
+      };
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5F5), // さらに薄いグレー
+        backgroundColor: const Color(0xFFF5F5F5),
         title: const Text(
           '絞り込み検索',
-          style: TextStyle(color: Colors.black), // 黒い文字色
+          style: TextStyle(color: Colors.black),
         ),
         actions: [
           TextButton(
@@ -44,35 +64,132 @@ class _FilterModalState extends State<FilterModal> {
         ],
         elevation: 0,
       ),
-      body: Container(
-        color: Colors.white, // 背景を白に設定
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildFilterSection(
-                      'ジャンル',
-                      filters['genre'].isEmpty
-                          ? 'すべて'
-                          : filters['genre'].join(', '),
-                      _showGenreSelectionModal),
-                  _buildFilterSection(
-                      '地域',
-                      filters['region'].isEmpty
-                          ? 'すべて'
-                          : filters['region'].join(', '),
-                      _showRegionSelectionPage),
-                  _buildDateSection(),
-                  if (showStartCalendar) _buildCalendar(true),
-                  if (showEndCalendar) _buildCalendar(false),
+      body: Stack(
+        children: [
+          Container(
+            color: Colors.white,
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _buildFilterSection(
+                          'ジャンル',
+                          (filters['genre'] ?? <String>[]).isEmpty
+                              ? 'すべて'
+                              : filters['genre'].join(', '),
+                          _showGenreSelectionModal),
+                      _buildFilterSection(
+                          '地域',
+                          (filters['region'] ?? <String>[]).isEmpty
+                              ? 'すべて'
+                              : filters['region'].join(', '),
+                          _showRegionSelectionPage),
+                      _buildDateSection(),
+                      if (showStartCalendar) _buildCalendar(true),
+                      if (showEndCalendar) _buildCalendar(false),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 24,
+            left: 16,
+            right: 16,
+            child: Container(
+              width: double.infinity, // ボタンの幅を100%に設定
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15), // 控えめなドロップシャドウ
+                    spreadRadius: 1,
+                    blurRadius: 12,
+                    offset: const Offset(7, 7), // 右と下にドロップシャドウ
+                  ),
                 ],
               ),
+              child: ElevatedButton(
+                onPressed: () {
+                  widget.onApplyFilters(filters);
+                  Navigator.pop(context, filters); // フィルタを戻す
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue, // 色をBlueに戻す
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(8.0), // BorderRadiusを8.0に設定
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                child: const Text(
+                  '検索する',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
-            _buildSearchButton(),
-          ],
+          ),
+        ],
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        items: [
+          FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
+          FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
+          FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
+          FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
+        ],
+        centerItem: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EventSelectorPage(),
+              ),
+            );
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFFF0059), // 中央アイコンの背景色
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.local_taxi, // 中央アイコンをタクシーマークに設定
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
         ),
+        selectedIndex: 0, // デフォルトで最初のタブを選択
+        onTabSelected: (index) {
+          setState(() {
+            if (index == 0) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            }
+          });
+        },
+        labelStyle: const TextStyle(fontSize: 12),
       ),
     );
   }
@@ -86,7 +203,7 @@ class _FilterModalState extends State<FilterModal> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFFFF0059), // 色を変更
+            color: Color(0xFFFF0059),
           ),
         ),
         const SizedBox(height: 8),
@@ -117,7 +234,6 @@ class _FilterModalState extends State<FilterModal> {
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
             genre.GenreSelectionPage(
-          // エイリアスを使って呼び出す
           initialSelectedGenres: List<String>.from(filters['genre']),
           onGenresSelected: (selectedGenres) {
             setState(() {
@@ -148,7 +264,6 @@ class _FilterModalState extends State<FilterModal> {
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
             region.RegionSelectionPage(
-          // エイリアスを使って呼び出す
           initialSelectedRegions: List<String>.from(filters['region']),
           onRegionsSelected: (selectedRegions) {
             setState(() {
@@ -182,17 +297,27 @@ class _FilterModalState extends State<FilterModal> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFFFF0059), // 色を変更
+            color: Color(0xFFFF0059),
           ),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
-              child: _buildDateInput(
-                '開始日',
-                filters['startDate'],
-                () => setState(() => showStartCalendar = !showStartCalendar),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'いつから',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  _buildDateInput(
+                    '開始日',
+                    filters['startDate'],
+                    () =>
+                        setState(() => showStartCalendar = !showStartCalendar),
+                  ),
+                ],
               ),
             ),
             const Padding(
@@ -200,10 +325,19 @@ class _FilterModalState extends State<FilterModal> {
               child: Text('ー'),
             ),
             Expanded(
-              child: _buildDateInput(
-                '終了日',
-                filters['endDate'],
-                () => setState(() => showEndCalendar = !showEndCalendar),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'いつまで',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  _buildDateInput(
+                    '終了日',
+                    filters['endDate'],
+                    () => setState(() => showEndCalendar = !showEndCalendar),
+                  ),
+                ],
               ),
             ),
           ],
@@ -235,60 +369,25 @@ class _FilterModalState extends State<FilterModal> {
 
   Widget _buildCalendar(bool isStartDate) {
     return TableCalendar(
-        firstDay: DateTime.now(),
-        lastDay: DateTime.now().add(const Duration(days: 365)),
-        focusedDay: isStartDate ? filters['startDate'] : filters['endDate'],
-        selectedDayPredicate: (day) => isSameDay(
-            isStartDate ? filters['startDate'] : filters['endDate'], day),
-        onDaySelected: (selectedDay, focusedDay) {
-          setState(() {
-            if (isStartDate) {
-              filters['startDate'] = selectedDay;
-              showStartCalendar = false;
-            } else {
-              filters['endDate'] = selectedDay;
-              showEndCalendar = false;
-            }
-          });
-        },
-        headerStyle: HeaderStyle(
-          formatButtonVisible: false, // FormatButtonを非表示にする
-          titleCentered: true, // タイトルを中央に配置する
-        ));
-  }
-
-  Widget _buildSearchButton() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.5, // ボタンの幅を50%に設定
-        child: ElevatedButton(
-          onPressed: () {
-            widget.onApplyFilters(filters);
-            Navigator.pop(context);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shadowColor: Colors.black.withOpacity(0.15), // 控えめなドロップシャドウ
-            elevation: 10,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white, // 白い太字に設定
-            ),
-          ),
-          child: const Text(
-            '検索する',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+      firstDay: DateTime.now(),
+      lastDay: DateTime.now().add(const Duration(days: 365)),
+      focusedDay: isStartDate ? filters['startDate'] : filters['endDate'],
+      selectedDayPredicate: (day) => isSameDay(
+          isStartDate ? filters['startDate'] : filters['endDate'], day),
+      onDaySelected: (selectedDay, focusedDay) {
+        setState(() {
+          if (isStartDate) {
+            filters['startDate'] = selectedDay;
+            showStartCalendar = false;
+          } else {
+            filters['endDate'] = selectedDay;
+            showEndCalendar = false;
+          }
+        });
+      },
+      headerStyle: const HeaderStyle(
+        formatButtonVisible: false,
+        titleCentered: true,
       ),
     );
   }

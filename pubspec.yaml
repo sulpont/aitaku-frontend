@@ -40,3 +40,4 @@ flutter:
   assets:
     - assets/250x250.png
     - assets/images/welcome_screen.png
+    - assets/icon/app_icon.png

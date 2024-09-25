@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'nav_bar.dart'; // カスタムナビゲーションバーのインポート
+import 'search.dart'; // search.dartのインポート
 
 final storage = FlutterSecureStorage();
 
@@ -13,23 +15,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 2; // 最初に選択されるタブ（あいタクする）
+  int _selectedIndex = 0; // 現在のタブの選択状態を管理
 
-  // タブの内容を表示するためのメソッド
-  final List<Widget> _pages = [
-    Container(color: Colors.white), // ホームタブ (空のコンテナ)
-    Container(color: Colors.white), // お気に入りタブ (空のコンテナ)
-    Container(color: Colors.white), // あいタクするタブ (空のコンテナ)
-    Container(color: Colors.white), // 予約一覧タブ (空のコンテナ)
-    Container(color: Colors.white), // 緊急SOSタブ (空のコンテナ)
-  ];
-
-  // サインアウトの処理
   Future<void> signOut() async {
     final url = Uri.parse('http://15.152.251.125:8000/signout');
     final token = await storage.read(key: 'jwt');
 
-    // サインアウトリクエストの送信
     final response = await http.post(
       url,
       headers: {
@@ -37,17 +28,14 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
 
-    // サインアウト成功
     if (response.statusCode == 200) {
       await storage.delete(key: 'jwt'); // トークンを削除
       Navigator.pushReplacementNamed(context, '/sign-in'); // サインイン画面へ遷移
     } else {
-      // サインアウト失敗
       _showErrorDialog('サインアウトに失敗しました。もう一度お試しください。');
     }
   }
 
-  // サインアウト確認ダイアログを表示するメソッド
   void _showSignOutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -65,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               child: const Text('サインアウト', style: TextStyle(color: Colors.red)),
               onPressed: () {
-                Navigator.of(context).pop(); // ダイアログを閉じる
+                Navigator.of(context).pop();
                 signOut(); // サインアウト処理を実行
               },
             ),
@@ -75,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // エラーダイアログを表示するメソッド
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -87,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               child: const Text('OK'),
               onPressed: () {
-                Navigator.of(context).pop(); // ダイアログを閉じる
+                Navigator.of(context).pop();
               },
             ),
           ],
@@ -99,17 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // 背景色を白に設定
-
-      // Drawerを追加（サイドメニュー）
+      backgroundColor: Colors.white,
       drawer: Drawer(
         child: Container(
-          color: Colors.white, // 全体の背景色を白に設定
+          color: Colors.white,
           child: Column(
             children: [
-              const SizedBox(height: 40), // 全体を少し下に移動させる
-
-              // 戻るアローアイコン
+              const SizedBox(height: 40),
               Padding(
                 padding: const EdgeInsets.only(left: 16),
                 child: Align(
@@ -123,8 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // メニューリスト（プロフィール・設定・サインアウト）
               Expanded(
                 child: ListView(
                   padding: EdgeInsets.zero,
@@ -134,9 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ListTile(
                         leading: const FaIcon(FontAwesomeIcons.user),
                         title: const Text("プロフィール"),
-                        onTap: () {
-                          // プロフィール画面に遷移する処理を追加
-                        },
+                        onTap: () {},
                       ),
                     ),
                     Padding(
@@ -144,9 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ListTile(
                         leading: const FaIcon(FontAwesomeIcons.cog),
                         title: const Text("設定"),
-                        onTap: () {
-                          // 設定画面に遷移する処理を追加
-                        },
+                        onTap: () {},
                       ),
                     ),
                     Padding(
@@ -155,7 +132,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         leading: const FaIcon(FontAwesomeIcons.signOutAlt),
                         title: const Text("サインアウト"),
                         onTap: () {
-                          // サインアウト確認ダイアログを表示
                           _showSignOutDialog(context);
                         },
                       ),
@@ -177,11 +153,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-
-      // Drawer用のハンバーガーアイコンを表示
       body: Stack(
         children: [
-          _pages[_currentIndex],
+          const Center(child: Text('ホーム画面のコンテンツをここに配置してください')),
           Positioned(
             top: 50,
             left: 16,
@@ -210,48 +184,60 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-
-      // BottomNavigationBarを追加
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
-        onTap: (index) {
+      bottomNavigationBar: CustomBottomNavBar(
+        items: [
+          FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
+          FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
+          FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
+          FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
+        ],
+        centerItem: GestureDetector(
+          onTap: () {
+            // 中央アイコンを押した時にsearch.dartへ遷移
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      const EventSelectorPage()), // search.dart へ遷移
+            );
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFFF0059), // 中央アイコンの背景色を変更
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.local_taxi, // 中央アイコンをタクシーマークに変更
+              color: Colors.white, // アイコンの色
+              size: 32,
+            ),
+          ),
+        ),
+        selectedIndex: _selectedIndex, // 現在のタブのインデックスを渡す
+        onTabSelected: (index) {
           setState(() {
-            _currentIndex = index;
-            if (_currentIndex == 2) {
-              // あいタクするボタンが押されたら search.dart へ遷移
-              Navigator.pushNamed(context, '/search');
+            _selectedIndex = index; // 選択されたタブのインデックスを更新
+
+            if (index == 0) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const HomeScreen()), // ホームタブを押したらhome.dartへ遷移
+              );
             }
           });
         },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home, color: Colors.blue),
-            label: 'ホーム',
-          ),
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.heart, color: Colors.black),
-            label: 'お気に入り',
-          ),
-          BottomNavigationBarItem(
-            icon: CircleAvatar(
-              backgroundColor: Color(0xFFFF0059),
-              child: FaIcon(FontAwesomeIcons.taxi, color: Colors.white),
-            ),
-            label: 'あいタクする',
-          ),
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.clock, color: Colors.grey),
-            label: '予約一覧',
-          ),
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.phone, color: Colors.black),
-            label: '緊急SOS',
-          ),
-        ],
-        selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
+        labelStyle: const TextStyle(fontSize: 12), // 文字サイズを変更
       ),
     );
   }

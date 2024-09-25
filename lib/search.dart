@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert'; // JSON データのパースに使用
+import 'dart:convert'; // JSONデータのパースに使用
 import 'dart:async'; // デバウンス処理に使用
 import 'home.dart'; // home.dartのインポート
-import 'nav_bar.dart';
-import 'aitaku_condition.dart';
-import 'filter_modal.dart';
+import 'nav_bar.dart'; // カスタムナビゲーションバーのインポート
+import 'filter_modal.dart'; // フィルターモーダルのインポート
+import 'aitaku_condition.dart'; // 正しいパスに変更
 
 class EventSelectorPage extends StatefulWidget {
   const EventSelectorPage({Key? key}) : super(key: key);
@@ -19,59 +19,70 @@ class _EventSelectorPageState extends State<EventSelectorPage>
   String searchQuery = '';
   TextEditingController searchController = TextEditingController();
   List<Event> events = [];
-  bool isLoading = false; // ローディングインジケーター表示用
-  Timer? _debounce; // デバウンス用タイマー
-  late TabController _tabController; // タブコントローラー
+  bool isLoading = false;
+  Timer? _debounce;
+  late TabController _tabController;
+  Map<String, dynamic> filters = {};
+
+  int _selectedIndex = 0; // 現在の選択されたタブのインデックス
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-        length: 2, vsync: this, initialIndex: 1); // デフォルトで「公演日が早い順」を選択
+    _tabController = TabController(length: 2, vsync: this, initialIndex: 1);
   }
 
-  // デバウンス付きの検索メソッド
   void _onSearchChanged(String query) {
-    if (_debounce?.isActive ?? false) _debounce?.cancel(); // 既存のタイマーをキャンセル
-
-    // クエリが空の場合、イベントをクリアして「検索結果がありません」を表示
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
     if (query.isEmpty) {
-      setState(() {
-        events = [];
-        searchQuery = '';
-        isLoading = false; // ローディングを停止
-      });
+      _clearSearch();
       return;
     }
 
-    // デバウンス: ユーザーが入力し終わってから500ミリ秒後に検索実行
     _debounce = Timer(const Duration(milliseconds: 500), () {
       setState(() {
         searchQuery = query;
-        fetchEvents(); // クエリがある場合のみ検索を実行
+        fetchEvents();
       });
     });
   }
 
-  // APIからイベントデータを取得するメソッド
+  void _applyFilters(Map<String, dynamic> appliedFilters) {
+    setState(() {
+      filters = appliedFilters;
+      fetchEvents();
+    });
+  }
+
   Future<void> fetchEvents() async {
     setState(() {
-      isLoading = true; // ローディング中
+      isLoading = true;
     });
 
     try {
-      final response = await http.get(
-        Uri.parse(
-            'http://15.152.251.125:8000/search-events?query=$searchQuery'), // 適切なAPIエンドポイントを使用
-      );
+      Map<String, String> queryParams = {
+        'query': searchQuery,
+        if (filters.containsKey('genre') && filters['genre'].isNotEmpty)
+          'genre_2': filters['genre'].join(','),
+        if (filters.containsKey('region') && filters['region'].isNotEmpty)
+          'prefectures': filters['region'].join(','),
+        if (filters.containsKey('startDate'))
+          'start_time': filters['startDate'].toString().split(' ')[0],
+        if (filters.containsKey('endDate'))
+          'end_time': filters['endDate'].toString().split(' ')[0],
+      };
+
+      Uri uri = Uri.http('15.152.251.125:8000', '/search-events', queryParams);
+
+      final response = await http.get(uri);
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json
-            .decode(utf8.decode(response.bodyBytes))['events']; // UTF-8にデコード
+        final List<dynamic> data =
+            json.decode(utf8.decode(response.bodyBytes))['events'];
         setState(() {
           events = data.map((json) => Event.fromJson(json)).toList();
-          sortEvents(); // ソートを実行
-          isLoading = false; // ローディング終了
+          sortEvents();
+          isLoading = false;
         });
       } else {
         throw Exception('Failed to load events');
@@ -79,42 +90,39 @@ class _EventSelectorPageState extends State<EventSelectorPage>
     } catch (e) {
       print("Error: $e");
       setState(() {
-        isLoading = false; // エラー時もローディング終了
+        isLoading = false;
       });
     }
   }
 
-  // イベントのソートメソッド
   void sortEvents() {
     if (_tabController.index == 0) {
-      // 公演日が遅い順にソート
       events.sort((a, b) => b.startTime.compareTo(a.startTime));
     } else {
-      // 公演日が早い順にソート
       events.sort((a, b) => a.startTime.compareTo(b.startTime));
     }
   }
 
-  // 検索フィールドをクリアするメソッド
   void _clearSearch() {
-    searchController.clear(); // テキストフィールドをクリア
+    searchController.clear();
     setState(() {
       searchQuery = '';
-      events = []; // 検索結果をリセット
+      events = [];
+      filters.clear();
     });
   }
 
   @override
   void dispose() {
-    _debounce?.cancel(); // 画面破棄時にタイマーをキャンセル
-    _tabController.dispose(); // タブコントローラーの破棄
+    _debounce?.cancel();
+    _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // 背景色を白に統一
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -127,7 +135,7 @@ class _EventSelectorPageState extends State<EventSelectorPage>
           },
         ),
         title: const Text('イベントを選ぶ', style: TextStyle(color: Colors.black)),
-        backgroundColor: const Color(0xFFF5F5F5), // 薄いグレー
+        backgroundColor: const Color(0xFFF5F5F5),
         elevation: 0,
       ),
       body: Stack(
@@ -136,14 +144,14 @@ class _EventSelectorPageState extends State<EventSelectorPage>
             children: <Widget>[
               SearchBar(
                 onChanged: _onSearchChanged,
-                controller: searchController, // テキストコントローラーを渡す
-                onClear: _clearSearch, // クリアボタンの処理
+                controller: searchController,
+                onClear: _clearSearch,
               ),
               TabBar(
                 controller: _tabController,
                 onTap: (index) {
                   setState(() {
-                    sortEvents(); // タブが変更されたときにソートを更新
+                    sortEvents();
                   });
                 },
                 tabs: const [
@@ -155,7 +163,7 @@ class _EventSelectorPageState extends State<EventSelectorPage>
                 indicatorColor: Colors.blue,
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 20, top: 8), // 件数表示を少し右に移動
+                padding: const EdgeInsets.only(left: 20, top: 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text('${events.length}件',
@@ -172,34 +180,36 @@ class _EventSelectorPageState extends State<EventSelectorPage>
             ],
           ),
           Positioned(
-            bottom: 24, // ボタンをNavBarに近いが少し上に配置
-            left: MediaQuery.of(context).size.width * 0.25, // 横位置をセンターに
+            bottom: 24,
+            left: MediaQuery.of(context).size.width * 0.25,
             child: Container(
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15), // 控えめなドロップシャドウ
+                    color: Colors.black.withOpacity(0.15),
                     spreadRadius: 1,
                     blurRadius: 12,
-                    offset: const Offset(7, 7), // 右と下にドロップシャドウ
+                    offset: const Offset(7, 7),
                   ),
                 ],
               ),
               child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.5, // ボタン幅を半分に調整
+                width: MediaQuery.of(context).size.width * 0.5,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => FilterModal(
-                          onApplyFilters: (filters) {
-                            // フィルターが適用された時の処理
-                            // TODO: ここにフィルター適用後の処理を記述
-                          },
+                          onApplyFilters: _applyFilters,
+                          initialFilters: filters,
                         ),
                       ),
                     );
+
+                    if (result != null && result is Map<String, dynamic>) {
+                      _applyFilters(result);
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -213,7 +223,7 @@ class _EventSelectorPageState extends State<EventSelectorPage>
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.bold, // 太字に設定
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -222,7 +232,61 @@ class _EventSelectorPageState extends State<EventSelectorPage>
           ),
         ],
       ),
-      bottomNavigationBar: const CustomBottomNavBar(),
+      bottomNavigationBar: CustomBottomNavBar(
+        items: [
+          FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
+          FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
+          FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
+          FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
+        ],
+        centerItem: GestureDetector(
+          onTap: () {
+            // 中央アイコンを押した時に再度search.dartへ遷移
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      const EventSelectorPage()), // 再びsearch.dart
+            );
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFFF0059), // 中央アイコンの背景色を変更
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.local_taxi, // 中央アイコンをタクシーマークに変更
+              color: Colors.white, // アイコンの色
+              size: 32,
+            ),
+          ),
+        ),
+        selectedIndex: _selectedIndex, // 現在のタブのインデックスを渡す
+        onTabSelected: (index) {
+          setState(() {
+            _selectedIndex = index; // 選択されたタブのインデックスを更新
+
+            if (index == 0) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const HomeScreen()), // ホームタブを押したらhome.dartへ遷移
+              );
+            }
+          });
+        },
+        labelStyle: const TextStyle(fontSize: 12), // 文字サイズを変更
+      ),
     );
   }
 }
@@ -233,11 +297,11 @@ class SearchBar extends StatelessWidget {
   final VoidCallback onClear;
 
   const SearchBar({
-    super.key,
+    Key? key,
     required this.onChanged,
     required this.controller,
     required this.onClear,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -245,14 +309,14 @@ class SearchBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: TextField(
         controller: controller,
-        onChanged: onChanged, // 入力イベントのたびにコールバックを呼び出す
+        onChanged: onChanged,
         decoration: InputDecoration(
           hintText: '公演名・アーティスト名を入力...',
           prefixIcon: const Icon(Icons.search),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear),
-                  onPressed: onClear, // クリアボタンを押すとフィールドをクリア
+                  onPressed: onClear,
                 )
               : null,
           border: OutlineInputBorder(
@@ -267,7 +331,7 @@ class SearchBar extends StatelessWidget {
 class EventSearchResults extends StatelessWidget {
   final List<Event> events;
 
-  const EventSearchResults({super.key, required this.events});
+  const EventSearchResults({Key? key, required this.events}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +348,7 @@ class EventSearchResults extends StatelessWidget {
 class EventCard extends StatelessWidget {
   final Event event;
 
-  const EventCard({super.key, required this.event});
+  const EventCard({Key? key, required this.event}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
