@@ -13,6 +13,7 @@ dependencies:
   table_calendar: ^3.0.0
 
   cupertino_icons: ^1.0.8
+  http: ^1.1.0  # Use the latest version available
 
 dev_dependencies:
   flutter_test:

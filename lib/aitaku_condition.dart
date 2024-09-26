@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'open_for_recruitement.dart'; // Import the file
+import 'package:http/http.dart' as http; // HTTPリクエスト用
+import 'dart:convert'; // JSONデコード用
 
 class AiTakuConditionSpecification extends StatefulWidget {
   final String? initialDeparture;
@@ -47,6 +49,12 @@ class _AiTakuConditionSpecificationState
   String? departure = '東急東横線 菊名駅 中央改札前';
   String? destination = '神奈川／日産スタジアム 北口';
 
+  // イベントデータ用の変数を追加
+  String eventName = '';
+  String eventDescription = '';
+  String eventDate = '';
+  String eventLocation = '';
+
   @override
   void initState() {
     super.initState();
@@ -79,6 +87,31 @@ class _AiTakuConditionSpecificationState
     }
     if (widget.initialEstimatedFare != null) {
       estimatedFare = widget.initialEstimatedFare!;
+    }
+    fetchEventData(); // イベントデータを取得
+  }
+
+  // イベントデータを取得するメソッドを追加
+  Future<void> fetchEventData() async {
+    final eventId = ModalRoute.of(context)?.settings.arguments as String?; // ルート引数からイベントIDを取得
+    if (eventId == null) {
+      // eventIdが取得できない場合の処理
+      return;
+    }
+
+    final response = await http.get(Uri.parse('https://yourapi.com/events/$eventId'));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      setState(() {
+        eventName = data['name'];
+        eventDescription = data['description'];
+        eventDate = data['date'];
+        eventLocation = data['location'];
+      });
+    } else {
+      // エラーハンドリング
+      // 必要に応じてエラーメッセージを表示するなど
     }
   }
 
@@ -113,16 +146,16 @@ class _AiTakuConditionSpecificationState
                 const Text('復路の条件を選択中', style: TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
 
-              // イベント詳細
+              // イベント詳細を動的に表示
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('TWICE', style: TextStyle(fontSize: 24)),
+                children: [
+                  Text(eventName, style: TextStyle(fontSize: 24)),
                   Text(
-                    'TWICE 5TH WORLD TOUR \'READY T...\'',
+                    eventDescription,
                     style: TextStyle(fontSize: 20, color: Colors.pink),
                   ),
-                  Text('2024年7月27日(土) 神奈川／日産スタジアム',
+                  Text('$eventDate $eventLocation',
                       style: TextStyle(color: Colors.grey)),
                 ],
               ),
