@@ -264,7 +264,6 @@ class _RegionSelectionPageState extends State<RegionSelectionPage> {
             }
           });
         },
-        labelStyle: const TextStyle(fontSize: 12),
       ),
     );
   }

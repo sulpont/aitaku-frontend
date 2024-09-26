@@ -184,60 +184,79 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: [
-          FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
-          FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
-          FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
-          FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
-        ],
-        centerItem: GestureDetector(
-          onTap: () {
-            // 中央アイコンを押した時にsearch.dartへ遷移
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      const EventSelectorPage()), // search.dart へ遷移
-            );
-          },
-          child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFFF0059), // 中央アイコンの背景色を変更
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.local_taxi, // 中央アイコンをタクシーマークに変更
-              color: Colors.white, // アイコンの色
-              size: 32,
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none, // アイコンが上部にはみ出るように設定
+        children: [
+          CustomBottomNavBar(
+            items: [
+              FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
+              FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
+              FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
+              FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
+            ],
+            selectedIndex: _selectedIndex,
+            onTabSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+                if (index == 0) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                }
+              });
+            },
+            // 必要なcenterItemを追加
+            centerItem: Container(),
+          ),
+          Positioned(
+            bottom: 40, // アイコンの上部がさらにナビゲーションバーから飛び出すように設定
+            left: (MediaQuery.of(context).size.width / 2) - 30, // 中央に配置
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const EventSelectorPage()),
+                );
+              },
+              child: Column(
+                children: [
+                  Container(
+                    width: 60, // 円の幅を60に設定
+                    height: 60, // 円の高さを60に設定
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFFF0059), // 中央アイコンの背景色
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.local_taxi, // タクシーアイコン
+                      color: Colors.white, // アイコンの色
+                      size: 34, // アイコンサイズを調整
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'あいタク\nする',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey, // 文字色をグレーに
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        selectedIndex: _selectedIndex, // 現在のタブのインデックスを渡す
-        onTabSelected: (index) {
-          setState(() {
-            _selectedIndex = index; // 選択されたタブのインデックスを更新
-
-            if (index == 0) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const HomeScreen()), // ホームタブを押したらhome.dartへ遷移
-              );
-            }
-          });
-        },
-        labelStyle: const TextStyle(fontSize: 12), // 文字サイズを変更
+        ],
       ),
     );
   }

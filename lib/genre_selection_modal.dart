@@ -206,7 +206,7 @@ class _GenreSelectionPageState extends State<GenreSelectionPage> {
                   backgroundColor: Colors.blue, // ボタンの背景色を青に設定
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+                    borderRadius: BorderRadius.circular(8.0), // ボタンの角丸
                   ),
                   textStyle: const TextStyle(
                     fontSize: 16,
@@ -276,7 +276,6 @@ class _GenreSelectionPageState extends State<GenreSelectionPage> {
             }
           });
         },
-        labelStyle: const TextStyle(fontSize: 12),
       ),
     );
   }

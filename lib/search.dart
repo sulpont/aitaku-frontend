@@ -241,12 +241,10 @@ class _EventSelectorPageState extends State<EventSelectorPage>
         ],
         centerItem: GestureDetector(
           onTap: () {
-            // 中央アイコンを押した時に再度search.dartへ遷移
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) =>
-                      const EventSelectorPage()), // 再びsearch.dart
+                  builder: (context) => const EventSelectorPage()),
             );
           },
           child: Container(
@@ -278,14 +276,11 @@ class _EventSelectorPageState extends State<EventSelectorPage>
             if (index == 0) {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const HomeScreen()), // ホームタブを押したらhome.dartへ遷移
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
               );
             }
           });
         },
-        labelStyle: const TextStyle(fontSize: 12), // 文字サイズを変更
       ),
     );
   }

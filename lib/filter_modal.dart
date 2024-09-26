@@ -189,7 +189,6 @@ class _FilterModalState extends State<FilterModal> {
             }
           });
         },
-        labelStyle: const TextStyle(fontSize: 12),
       ),
     );
   }
