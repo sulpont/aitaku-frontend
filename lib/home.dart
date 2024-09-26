@@ -206,12 +206,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               });
             },
-            // 必要なcenterItemを追加
-            centerItem: Container(),
+            centerItem: const SizedBox.shrink(),
           ),
           Positioned(
-            bottom: 40, // アイコンの上部がさらにナビゲーションバーから飛び出すように設定
-            left: (MediaQuery.of(context).size.width / 2) - 30, // 中央に配置
+            bottom: 40, // アイコンを上部に飛び出すように配置
+            left: MediaQuery.of(context).size.width / 2 - 30, // 中央に配置
             child: GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -223,11 +222,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   Container(
-                    width: 60, // 円の幅を60に設定
-                    height: 60, // 円の高さを60に設定
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFFF0059), // 中央アイコンの背景色
+                      color: const Color(0xFFFF0059), // 中央アイコンの背景色を変更
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.3),
@@ -237,9 +236,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     child: const Icon(
-                      Icons.local_taxi, // タクシーアイコン
+                      Icons.local_taxi, // 中央アイコンをタクシーマークに変更
                       color: Colors.white, // アイコンの色
-                      size: 34, // アイコンサイズを調整
+                      size: 40,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -247,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'あいタク\nする',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.grey, // 文字色をグレーに
+                      color: Colors.grey,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),

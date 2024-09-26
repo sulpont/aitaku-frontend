@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'genre_selection_modal.dart' as genre; // エイリアスをつける
-import 'region_selection_modal.dart' as region; // エイリアスをつける
-import 'nav_bar.dart'; // カスタムナビゲーションバーをインポート
-import 'home.dart'; // ホーム画面のインポート
-import 'search.dart'; // 検索画面のインポート
+import 'genre_selection_modal.dart' as genre;
+import 'region_selection_modal.dart' as region;
+import 'nav_bar.dart';
+import 'home.dart';
+import 'search.dart';
 
 class FilterModal extends StatefulWidget {
   final Function(Map<String, dynamic>) onApplyFilters;
@@ -96,32 +96,31 @@ class _FilterModalState extends State<FilterModal> {
             ),
           ),
           Positioned(
-            bottom: 24,
+            bottom: 40, // ボタンの位置を調整
             left: 16,
             right: 16,
             child: Container(
-              width: double.infinity, // ボタンの幅を100%に設定
+              width: double.infinity,
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15), // 控えめなドロップシャドウ
+                    color: Colors.black.withOpacity(0.15),
                     spreadRadius: 1,
                     blurRadius: 12,
-                    offset: const Offset(7, 7), // 右と下にドロップシャドウ
+                    offset: const Offset(7, 7),
                   ),
                 ],
               ),
               child: ElevatedButton(
                 onPressed: () {
                   widget.onApplyFilters(filters);
-                  Navigator.pop(context, filters); // フィルタを戻す
+                  Navigator.pop(context, filters);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, // 色をBlueに戻す
+                  backgroundColor: Colors.blue,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(8.0), // BorderRadiusを8.0に設定
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
                   textStyle: const TextStyle(
                     fontSize: 16,
@@ -141,54 +140,77 @@ class _FilterModalState extends State<FilterModal> {
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: [
-          FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
-          FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
-          FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
-          FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
-        ],
-        centerItem: GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EventSelectorPage(),
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CustomBottomNavBar(
+            items: [
+              FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
+              FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
+              FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
+              FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
+            ],
+            selectedIndex: 0,
+            onTabSelected: (index) {
+              setState(() {
+                if (index == 0) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                }
+              });
+            },
+            centerItem: Container(),
+          ),
+          Positioned(
+            bottom: 40, // アイコンが少しナビゲーションバーから飛び出すように調整
+            left: MediaQuery.of(context).size.width / 2 - 30, // 中央に配置
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const EventSelectorPage()),
+                );
+              },
+              child: Column(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFFF0059),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.local_taxi,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'あいタク\nする',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
-          child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFFF0059), // 中央アイコンの背景色
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.local_taxi, // 中央アイコンをタクシーマークに設定
-              color: Colors.white,
-              size: 32,
             ),
           ),
-        ),
-        selectedIndex: 0, // デフォルトで最初のタブを選択
-        onTabSelected: (index) {
-          setState(() {
-            if (index == 0) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-              );
-            }
-          });
-        },
+        ],
       ),
     );
   }
@@ -241,7 +263,7 @@ class _FilterModalState extends State<FilterModal> {
           },
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0); // 右から左にスライド
+          const begin = Offset(1.0, 0.0);
           const end = Offset.zero;
           const curve = Curves.ease;
 
@@ -271,7 +293,7 @@ class _FilterModalState extends State<FilterModal> {
           },
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0); // 右から左にスライド
+          const begin = Offset(1.0, 0.0);
           const end = Offset.zero;
           const curve = Curves.ease;
 

@@ -180,7 +180,7 @@ class _EventSelectorPageState extends State<EventSelectorPage>
             ],
           ),
           Positioned(
-            bottom: 24,
+            bottom: 40,
             left: MediaQuery.of(context).size.width * 0.25,
             child: Container(
               decoration: BoxDecoration(
@@ -232,55 +232,78 @@ class _EventSelectorPageState extends State<EventSelectorPage>
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: [
-          FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
-          FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
-          FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
-          FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
-        ],
-        centerItem: GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const EventSelectorPage()),
-            );
-          },
-          child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFFF0059), // 中央アイコンの背景色を変更
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.local_taxi, // 中央アイコンをタクシーマークに変更
-              color: Colors.white, // アイコンの色
-              size: 32,
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none, // アイコンが上部にはみ出るように設定
+        children: [
+          CustomBottomNavBar(
+            items: [
+              FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
+              FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
+              FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
+              FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
+            ],
+            selectedIndex: _selectedIndex,
+            onTabSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+                if (index == 0) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                }
+              });
+            },
+            centerItem: const SizedBox.shrink(),
+          ),
+          Positioned(
+            bottom: 40, // アイコンを上部に飛び出すように配置
+            left: MediaQuery.of(context).size.width / 2 - 30, // 中央に配置
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const EventSelectorPage()),
+                );
+              },
+              child: Column(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFFF0059), // 中央アイコンの背景色を変更
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.local_taxi, // 中央アイコンをタクシーマークに変更
+                      color: Colors.white, // アイコンの色
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'あいタク\nする',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        selectedIndex: _selectedIndex, // 現在のタブのインデックスを渡す
-        onTabSelected: (index) {
-          setState(() {
-            _selectedIndex = index; // 選択されたタブのインデックスを更新
-
-            if (index == 0) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-              );
-            }
-          });
-        },
+        ],
       ),
     );
   }
