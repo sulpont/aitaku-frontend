@@ -60,16 +60,16 @@ class _EventSelectorPageState extends State<EventSelectorPage>
     });
 
     try {
-      Map<String, String> queryParams = {
-        'query': searchQuery,
+      Map<String, List<String>> queryParams = {
+        'query': [searchQuery],
         if (filters.containsKey('genre') && filters['genre'].isNotEmpty)
-          'genre_2': filters['genre'].join(','),
+          'genre_2': filters['genre'], // リストをそのまま渡す
         if (filters.containsKey('region') && filters['region'].isNotEmpty)
-          'prefectures': filters['region'].join(','),
+          'prefectures': filters['region'], // リストをそのまま渡す
         if (filters.containsKey('startDate'))
-          'start_time': filters['startDate'].toString().split(' ')[0],
+          'start_time': [filters['startDate'].toString().split(' ')[0]],
         if (filters.containsKey('endDate'))
-          'end_time': filters['endDate'].toString().split(' ')[0],
+          'end_time': [filters['endDate'].toString().split(' ')[0]],
       };
 
       Uri uri = Uri.http('15.152.251.125:8000', '/search-events', queryParams);
