@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'genre_selection_modal.dart';
-import 'region_selection_modal.dart';
+import 'genre_selection_modal.dart' as genre;
+import 'region_selection_modal.dart' as region;
+import 'nav_bar.dart';
+import 'home.dart';
+import 'search.dart';
 
 class FilterModal extends StatefulWidget {
   final Function(Map<String, dynamic>) onApplyFilters;
+  final Map<String, dynamic>? initialFilters;
 
-  const FilterModal({Key? key, required this.onApplyFilters}) : super(key: key);
+  const FilterModal(
+      {Key? key, required this.onApplyFilters, this.initialFilters})
+      : super(key: key);
 
   @override
   _FilterModalState createState() => _FilterModalState();
@@ -16,7 +22,7 @@ class FilterModal extends StatefulWidget {
 class _FilterModalState extends State<FilterModal> {
   Map<String, dynamic> filters = {
     'genre': <String>[],
-    'region': <String>[], // List<String> に変更
+    'region': <String>[],
     'startDate': DateTime.now(),
     'endDate': DateTime.now().add(const Duration(days: 30)),
   };
@@ -25,66 +31,183 @@ class _FilterModalState extends State<FilterModal> {
   bool showEndCalendar = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildFilterSection(
-                    'ジャンル',
-                    filters['genre'].isEmpty
-                        ? 'すべて'
-                        : filters['genre'].join(', '),
-                    _showGenreSelectionModal),
-                _buildFilterSection(
-                    '地域',
-                    filters['region'].isEmpty
-                        ? 'すべて'
-                        : filters['region'].join(', '),
-                    _showRegionSelectionModal),
-                _buildDateSection(),
-                if (showStartCalendar) _buildCalendar(true),
-                if (showEndCalendar) _buildCalendar(false),
-              ],
-            ),
-          ),
-          _buildSearchButton(),
-        ],
-      ),
-    );
+  void initState() {
+    super.initState();
+    if (widget.initialFilters != null) {
+      filters = {
+        'genre': widget.initialFilters!['genre'] ?? <String>[],
+        'region': widget.initialFilters!['region'] ?? <String>[],
+        'startDate': widget.initialFilters!['startDate'] ?? DateTime.now(),
+        'endDate': widget.initialFilters!['endDate'] ??
+            DateTime.now().add(const Duration(days: 30)),
+      };
+    }
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.close, color: Colors.grey),
-          ),
-          const Text(
-            '絞り込み検索',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          GestureDetector(
-            onTap: _resetFilters,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF5F5F5),
+        title: const Text(
+          '絞り込み検索',
+          style: TextStyle(color: Colors.black),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _resetFilters,
             child: const Text(
               '条件リセット',
               style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ],
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          Container(
+            color: Colors.white,
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _buildFilterSection(
+                          'ジャンル',
+                          (filters['genre'] ?? <String>[]).isEmpty
+                              ? 'すべて'
+                              : filters['genre'].join(', '),
+                          _showGenreSelectionModal),
+                      _buildFilterSection(
+                          '地域',
+                          (filters['region'] ?? <String>[]).isEmpty
+                              ? 'すべて'
+                              : filters['region'].join(', '),
+                          _showRegionSelectionPage),
+                      _buildDateSection(),
+                      if (showStartCalendar) _buildCalendar(true),
+                      if (showEndCalendar) _buildCalendar(false),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 40, // ボタンの位置を調整
+            left: 16,
+            right: 16,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    spreadRadius: 1,
+                    blurRadius: 12,
+                    offset: const Offset(7, 7),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: () {
+                  widget.onApplyFilters(filters);
+                  Navigator.pop(context, filters);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                child: const Text(
+                  '検索する',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CustomBottomNavBar(
+            items: [
+              FABBottomAppBarItem(iconData: Icons.home, text: 'ホーム'),
+              FABBottomAppBarItem(iconData: Icons.favorite, text: 'お気に入り'),
+              FABBottomAppBarItem(iconData: Icons.schedule, text: '予約一覧'),
+              FABBottomAppBarItem(iconData: Icons.phone, text: '緊急SOS'),
+            ],
+            selectedIndex: 0,
+            onTabSelected: (index) {
+              setState(() {
+                if (index == 0) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                }
+              });
+            },
+            centerItem: Container(),
+          ),
+          Positioned(
+            bottom: 40, // アイコンが少しナビゲーションバーから飛び出すように調整
+            left: MediaQuery.of(context).size.width / 2 - 30, // 中央に配置
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const EventSelectorPage()),
+                );
+              },
+              child: Column(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFFF0059),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.local_taxi,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'あいタク\nする',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -101,7 +224,7 @@ class _FilterModalState extends State<FilterModal> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: Color(0xFFFF0059),
           ),
         ),
         const SizedBox(height: 8),
@@ -127,31 +250,60 @@ class _FilterModalState extends State<FilterModal> {
   }
 
   void _showGenreSelectionModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => GenreSelectionModal(
-        initialSelectedGenres:
-            List<String>.from(filters['genre']), // List<String> にキャスト
-        onGenresSelected: (selectedGenres) {
-          setState(() {
-            filters['genre'] = selectedGenres;
-          });
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            genre.GenreSelectionPage(
+          initialSelectedGenres: List<String>.from(filters['genre']),
+          onGenresSelected: (selectedGenres) {
+            setState(() {
+              filters['genre'] = selectedGenres;
+            });
+          },
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
         },
       ),
     );
   }
 
-  void _showRegionSelectionModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => RegionSelectionModal(
-        initialSelectedRegions: List<String>.from(filters['region']),
-        onRegionsSelected: (selectedRegions) {
-          setState(() {
-            filters['region'] = selectedRegions;
-          });
+  void _showRegionSelectionPage() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            region.RegionSelectionPage(
+          initialSelectedRegions: List<String>.from(filters['region']),
+          onRegionsSelected: (selectedRegions) {
+            setState(() {
+              filters['region'] = selectedRegions;
+            });
+          },
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
         },
       ),
     );
@@ -166,17 +318,27 @@ class _FilterModalState extends State<FilterModal> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: Color(0xFFFF0059),
           ),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
-              child: _buildDateInput(
-                '開始日',
-                filters['startDate'],
-                () => setState(() => showStartCalendar = !showStartCalendar),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'いつから',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  _buildDateInput(
+                    '開始日',
+                    filters['startDate'],
+                    () =>
+                        setState(() => showStartCalendar = !showStartCalendar),
+                  ),
+                ],
               ),
             ),
             const Padding(
@@ -184,10 +346,19 @@ class _FilterModalState extends State<FilterModal> {
               child: Text('ー'),
             ),
             Expanded(
-              child: _buildDateInput(
-                '終了日',
-                filters['endDate'],
-                () => setState(() => showEndCalendar = !showEndCalendar),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'いつまで',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  _buildDateInput(
+                    '終了日',
+                    filters['endDate'],
+                    () => setState(() => showEndCalendar = !showEndCalendar),
+                  ),
+                ],
               ),
             ),
           ],
@@ -235,22 +406,9 @@ class _FilterModalState extends State<FilterModal> {
           }
         });
       },
-    );
-  }
-
-  Widget _buildSearchButton() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: ElevatedButton(
-        onPressed: () {
-          widget.onApplyFilters(filters);
-          Navigator.pop(context);
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          minimumSize: const Size(double.infinity, 50),
-        ),
-        child: const Text('検索する', style: TextStyle(fontSize: 18)),
+      headerStyle: const HeaderStyle(
+        formatButtonVisible: false,
+        titleCentered: true,
       ),
     );
   }
@@ -259,7 +417,7 @@ class _FilterModalState extends State<FilterModal> {
     setState(() {
       filters = {
         'genre': <String>[],
-        'region': <String>[], // 空のList<String>にリセット
+        'region': <String>[],
         'startDate': DateTime.now(),
         'endDate': DateTime.now().add(const Duration(days: 30)),
       };
