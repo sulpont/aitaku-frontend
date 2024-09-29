@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'aitaku_condition.dart'; // Import the file to reuse the bottom navigation bar
 import 'aitaku_candidate.dart'; // Import the candidate screen
 
 class OpenForRecruitment extends StatelessWidget {
