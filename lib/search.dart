@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
+import 'filter_modal.dart';
+import 'aitaku_condition.dart'; // この行を追加
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // JSONデータのパースに使用
 import 'dart:async'; // デバウンス処理に使用
 import 'home.dart'; // home.dartのインポート
 import 'nav_bar.dart'; // カスタムナビゲーションバーのインポート
-import 'filter_modal.dart'; // フィルターモーダルのインポート
-import 'aitaku_condition.dart'; // 正しいパスに変更
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Event Selector App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: const EventSelectorPage(),
+    );
+  }
+}
 
 class EventSelectorPage extends StatefulWidget {
   const EventSelectorPage({Key? key}) : super(key: key);
