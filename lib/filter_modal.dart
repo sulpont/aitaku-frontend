@@ -6,6 +6,9 @@ import 'region_selection_modal.dart' as region;
 import 'nav_bar.dart';
 import 'home.dart';
 import 'search.dart';
+import 'aitaku_condition.dart'; // 追加: 条件指定ページへの遷移用
+import 'package:http/http.dart' as http; // HTTPリクエスト用
+import 'dart:convert'; // JSONデコード用
 
 class FilterModal extends StatefulWidget {
   final Function(Map<String, dynamic>) onApplyFilters;
@@ -41,6 +44,46 @@ class _FilterModalState extends State<FilterModal> {
         'endDate': widget.initialFilters!['endDate'] ??
             DateTime.now().add(const Duration(days: 30)),
       };
+    }
+  }
+
+  // 出発地・目的地をチェックインテーブルから取得
+  Future<String?> fetchCheckInPlace(int eventVenueId) async {
+    try {
+      final response = await http.get(
+          Uri.parse('http://15.152.251.125:8000/check-in-place/$eventVenueId'));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['check_in_place'];
+      } else {
+        throw Exception('Failed to load check-in place');
+      }
+    } catch (e) {
+      print('Error fetching check-in place: $e');
+      return null;
+    }
+  }
+
+  // イベントカードのタップでaitaku_condition.dartへ遷移
+  void _onEventCardTapped(BuildContext context, int eventVenueId,
+      String eventVenue, String tripType) async {
+    final checkInPlace = await fetchCheckInPlace(eventVenueId);
+
+    if (checkInPlace != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AiTakuConditionSpecification(
+            initialDeparture: tripType == '行き' ? checkInPlace : eventVenue,
+            initialDestination: tripType == '行き' ? eventVenue : checkInPlace,
+            initialTripType: tripType,
+          ),
+        ),
+      );
+    } else {
+      // エラーハンドリング
+      print('Check-in place not found');
     }
   }
 

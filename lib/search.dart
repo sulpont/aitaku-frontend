@@ -253,7 +253,7 @@ class _EventSelectorPageState extends State<EventSelectorPage>
         ],
       ),
       bottomNavigationBar: Stack(
-        clipBehavior: Clip.none, // アイコンが上部にはみ出るように設定
+        clipBehavior: Clip.none,
         children: [
           CustomBottomNavBar(
             items: [
@@ -277,8 +277,8 @@ class _EventSelectorPageState extends State<EventSelectorPage>
             centerItem: const SizedBox.shrink(),
           ),
           Positioned(
-            bottom: 40, // アイコンを上部に飛び出すように配置
-            left: MediaQuery.of(context).size.width / 2 - 30, // 中央に配置
+            bottom: 40,
+            left: MediaQuery.of(context).size.width / 2 - 30,
             child: GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -294,7 +294,7 @@ class _EventSelectorPageState extends State<EventSelectorPage>
                     height: 60,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFFF0059), // 中央アイコンの背景色を変更
+                      color: const Color(0xFFFF0059),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.3),
@@ -304,8 +304,8 @@ class _EventSelectorPageState extends State<EventSelectorPage>
                       ],
                     ),
                     child: const Icon(
-                      Icons.local_taxi, // 中央アイコンをタクシーマークに変更
-                      color: Colors.white, // アイコンの色
+                      Icons.local_taxi,
+                      color: Colors.white,
                       size: 40,
                     ),
                   ),
@@ -431,8 +431,10 @@ class EventCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) =>
-                              const AiTakuConditionSpecification()),
+                        builder: (context) => AiTakuConditionSpecification(),
+                        settings: RouteSettings(
+                            arguments: event.id.toString()), // int型をStringに変換
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -461,29 +463,35 @@ class EventCard extends StatelessWidget {
 }
 
 class Event {
+  final int id; // 'id'はint型
   final String title;
   final String artist;
   final String venue;
   final String startTime;
   final String endTime;
+  final String checkInPlace;
   final String imageUrl;
 
   Event({
+    required this.id,
     required this.title,
     required this.artist,
     required this.venue,
     required this.startTime,
     required this.endTime,
+    required this.checkInPlace,
     required this.imageUrl,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
+      id: json['event_id'], // JSONのフィールド名が 'event_id'
       title: json['event_title'],
       artist: json['artist_name'] ?? '不明',
       venue: json['event_venue'],
       startTime: json['start_time'],
       endTime: json['end_time'] ?? '不明',
+      checkInPlace: json['check_in_place'] ?? '---', // 出発地
       imageUrl: json['picture_path'] ?? '',
     );
   }

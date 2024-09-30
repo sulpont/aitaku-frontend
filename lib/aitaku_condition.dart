@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'open_for_recruitement.dart'; // Import the file
-import 'package:http/http.dart' as http; // HTTPリクエスト用
+import 'package:http/http.dart' as http;
 import 'dart:convert'; // JSONデコード用
+import 'open_for_recruitement.dart';
 
 class AiTakuConditionSpecification extends StatefulWidget {
   final String? initialDeparture;
@@ -13,7 +13,6 @@ class AiTakuConditionSpecification extends StatefulWidget {
   final bool? initialIdVerified;
   final String? initialSelectedTime;
   final String? initialTripType;
-  final String? initialEstimatedFare;
   final bool isReturnTrip;
 
   const AiTakuConditionSpecification({
@@ -27,7 +26,6 @@ class AiTakuConditionSpecification extends StatefulWidget {
     this.initialIdVerified,
     this.initialSelectedTime,
     this.initialTripType,
-    this.initialEstimatedFare,
     this.isReturnTrip = false,
   }) : super(key: key);
 
@@ -38,80 +36,64 @@ class AiTakuConditionSpecification extends StatefulWidget {
 
 class _AiTakuConditionSpecificationState
     extends State<AiTakuConditionSpecification> {
-  String? friendCount = 'なし'; // Set default value to 'なし'
-  String? minPeople = '2人'; // Set default value to '2人'
-  String? backSeat = '2人まで'; // Set default value to '2人まで'
+  String? friendCount = 'なし';
+  String? minPeople = '2人';
+  String? backSeat = '2人まで';
   bool femaleOnly = false;
   bool idVerified = true;
   String? selectedTime;
-  String estimatedFare = '¥3000'; // 仮の値を設定
-  String? tripType = '片道'; // Set default value to '片道'
-  String? departure = '東急東横線 菊名駅 中央改札前';
-  String? destination = '神奈川／日産スタジアム 北口';
+  String? tripType = '行き';
+  String? departure = '---'; // デフォルト値を '---' に設定
+  String? destination = '---'; // デフォルト値を '---' に設定
 
-  // イベントデータ用の変数を追加
+  List<String> departureOptions = [];
+  List<String> destinationOptions = [];
+
   String eventName = '';
   String eventDescription = '';
   String eventDate = '';
   String eventLocation = '';
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.initialDeparture != null) {
-      departure = widget.initialDeparture;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (widget.initialTripType == '行き') {
+      departure = widget.initialDeparture ?? '---';
+      destination = widget.initialDestination ?? '---';
+    } else if (widget.initialTripType == '帰り') {
+      departure = widget.initialDestination ?? '---';
+      destination = widget.initialDeparture ?? '---';
     }
-    if (widget.initialDestination != null) {
-      destination = widget.initialDestination;
-    }
-    if (widget.initialFriendCount != null) {
-      friendCount = widget.initialFriendCount;
-    }
-    if (widget.initialMinPeople != null) {
-      minPeople = widget.initialMinPeople;
-    }
-    if (widget.initialBackSeat != null) {
-      backSeat = widget.initialBackSeat;
-    }
-    if (widget.initialFemaleOnly != null) {
-      femaleOnly = widget.initialFemaleOnly!;
-    }
-    if (widget.initialIdVerified != null) {
-      idVerified = widget.initialIdVerified!;
-    }
-    if (widget.initialSelectedTime != null) {
-      selectedTime = widget.initialSelectedTime;
-    }
-    if (widget.initialTripType != null) {
-      tripType = widget.initialTripType;
-    }
-    if (widget.initialEstimatedFare != null) {
-      estimatedFare = widget.initialEstimatedFare!;
-    }
+
+    departureOptions = [departure!];
+    destinationOptions = [destination!];
+
     fetchEventData(); // イベントデータを取得
   }
 
-  // イベントデータを取得するメソッドを追加
   Future<void> fetchEventData() async {
-    final eventId = ModalRoute.of(context)?.settings.arguments as String?; // ルート引数からイベントIDを取得
+    final eventId = ModalRoute.of(context)?.settings.arguments as String?;
     if (eventId == null) {
-      // eventIdが取得できない場合の処理
       return;
     }
 
-    final response = await http.get(Uri.parse('https://yourapi.com/events/$eventId'));
+    final response =
+        await http.get(Uri.parse('http://15.152.251.125:8000/events/$eventId'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       setState(() {
-        eventName = data['name'];
-        eventDescription = data['description'];
-        eventDate = data['date'];
-        eventLocation = data['location'];
+        eventName = data['event_title'];
+        eventDescription = data['artist_name'];
+        eventDate = data['start_time'];
+        eventLocation = data['event_venue'];
+        departure = data['check_in_place'];
+        destination = data['event_venue'];
+
+        departureOptions = [departure!];
+        destinationOptions = [destination!];
       });
-    } else {
-      // エラーハンドリング
-      // 必要に応じてエラーメッセージを表示するなど
     }
   }
 
@@ -119,117 +101,105 @@ class _AiTakuConditionSpecificationState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('あいタク条件を指定'),
+        backgroundColor: const Color(0xFFF5F5F5),
+        title: const Text(
+          '条件を指定する',
+          style: TextStyle(color: Colors.black),
+        ),
         actions: [
           TextButton(
             onPressed: () {
-              // すべてクリアの処理を実装
+              setState(() {
+                departure = '---';
+                destination = '---';
+              });
             },
-            child: const Text('すべてクリア', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'すべてクリア',
+              style: TextStyle(color: Color(0xFF4CAF50)),
+            ),
           ),
         ],
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ステップ表示（デザインを修正）
               _buildStatusHeader(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-              // 片道・往復の選択を追加
+              // 行き、帰り、往復の選択肢
               if (!widget.isReturnTrip)
-                _buildSelection('片道・往復', ['片道', '往復'], tripType,
-                    (value) => setState(() => tripType = value))
+                _buildSelection('行き・帰り・往復', ['行き', '帰り', '往復'], tripType,
+                    (value) => setState(() => tripType = value),
+                    baseColor: const Color(0xFFFF99A5))
               else
-                const Text('復路の条件を選択中', style: TextStyle(fontSize: 16)),
+                const Text('帰り（復路）の条件を選択中', style: TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
 
-              // イベント詳細を動的に表示
+              // イベント詳細表示
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(eventName, style: TextStyle(fontSize: 24)),
+                  Text(eventName, style: const TextStyle(fontSize: 24)),
                   Text(
                     eventDescription,
-                    style: TextStyle(fontSize: 20, color: Colors.pink),
+                    style: const TextStyle(fontSize: 20, color: Colors.pink),
                   ),
                   Text('$eventDate $eventLocation',
-                      style: TextStyle(color: Colors.grey)),
+                      style: const TextStyle(color: Colors.grey)),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // 出発地選択
-              _buildDropdown('出発地', [departure!], departure!),
-              const SizedBox(height: 16),
+              // 出発地と目的地のプルダウン表示
+              _buildDropdown('出発地', departureOptions, departure),
+              const SizedBox(height: 12),
+              _buildDropdown('目的地', destinationOptions, destination),
+              const SizedBox(height: 12),
 
-              // 目的地選択
-              _buildDropdown('目的地', [destination!], destination!),
-              const SizedBox(height: 16),
+              // デバッグ用に出発地と目的地を文字列として表示
+              Text('Selected Departure: $departure'),
+              Text('Selected Destination: $destination'),
 
-              // お友達の人数
               _buildSelection('お友達の人数', ['なし', '1人', '2人', '3人'], friendCount,
-                  (value) => setState(() => friendCount = value)),
-              const SizedBox(height: 16),
+                  (value) => setState(() => friendCount = value),
+                  baseColor: Colors.blue),
+              const SizedBox(height: 12),
 
-              // 最小人数
               _buildSelection('最小人数', ['2人', '3人', '4人'], minPeople,
-                  (value) => setState(() => minPeople = value)),
-              const SizedBox(height: 16),
+                  (value) => setState(() => minPeople = value),
+                  baseColor: Colors.blue),
+              const SizedBox(height: 12),
 
-              // 後部座席
               _buildSelection('後部座席', ['2人まで', '3人でも可'], backSeat,
-                  (value) => setState(() => backSeat = value)),
-              const SizedBox(height: 16),
+                  (value) => setState(() => backSeat = value),
+                  baseColor: Colors.blue),
+              const SizedBox(height: 12),
 
-              // 女性限定
+              // 女性限定・書類提出済みのスイッチ
               _buildSwitch('女性限定', femaleOnly, (value) {
                 setState(() {
                   femaleOnly = value;
                 });
-              }),
-              const SizedBox(height: 16),
+              }, switchColor: Colors.green),
+              const SizedBox(height: 12),
 
-              // 本人確認書類提出済み
               _buildSwitch('本人確認書類提出済み', idVerified, (value) {
                 setState(() {
                   idVerified = value;
                 });
-              }),
-              const SizedBox(height: 16),
+              }, switchColor: Colors.green),
+              const SizedBox(height: 12),
 
-              // 待ち合わせ時刻
+              // 時刻選択
               _buildTimePicker(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // FareAndRecruitmentウィジェットを追加
-              FareAndRecruitment(
-                estimatedFare: estimatedFare,
-                tripType: tripType!,
-                isReturnTrip: widget.isReturnTrip,
-                onReturnTripSelected: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AiTakuConditionSpecification(
-                        initialDeparture: destination,
-                        initialDestination: departure,
-                        initialFriendCount: friendCount,
-                        initialMinPeople: minPeople,
-                        initialBackSeat: backSeat,
-                        initialFemaleOnly: femaleOnly,
-                        initialIdVerified: idVerified,
-                        initialSelectedTime: selectedTime,
-                        initialTripType: tripType,
-                        initialEstimatedFare: estimatedFare,
-                        isReturnTrip: true,
-                      ),
-                    ),
-                  );
-                },
-              ),
+              _buildActionButton()
             ],
           ),
         ),
@@ -238,12 +208,192 @@ class _AiTakuConditionSpecificationState
     );
   }
 
-  // ステータスヘッダー部分を修正
+  Widget _buildActionButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () {
+            if (tripType == '往復') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AiTakuConditionSpecification(
+                    initialDeparture: destination,
+                    initialDestination: departure,
+                    isReturnTrip: true,
+                  ),
+                ),
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OpenForRecruitment(),
+                ),
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFFF0059),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            tripType == '往復' ? '帰り（復路）を指定する' : '募集する',
+            style: const TextStyle(fontSize: 16, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, List<String> options, String? selected) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 16)),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButton<String>(
+                isExpanded: true, // ドロップダウンのサイズを親に合わせる
+                value: selected,
+                onChanged: (newValue) {
+                  setState(() {
+                    if (label == '出発地') {
+                      departure = newValue;
+                    } else {
+                      destination = newValue;
+                    }
+                  });
+                },
+                items: options.map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelection(String label, List<String> options, String? selected,
+      Function(String) onSelected,
+      {required Color baseColor}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 16)),
+        Wrap(
+          spacing: 8.0,
+          children: options.map((option) {
+            return ChoiceChip(
+              label: Text(option),
+              selected: selected == option,
+              selectedColor: baseColor,
+              onSelected: (bool isSelected) {
+                onSelected(option);
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSwitch(String label, bool switchValue, Function(bool) onChanged,
+      {required Color switchColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 16)),
+        Switch(
+          value: switchValue,
+          onChanged: onChanged,
+          activeColor: switchColor,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimePicker() {
+    List<String> hours =
+        List.generate(24, (index) => index.toString().padLeft(2, '0'));
+    List<String> minutes = ['00', '15', '30', '45'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('希望待ち合わせ時刻', style: TextStyle(fontSize: 16)),
+        Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  DropdownButton<String>(
+                    value: selectedTime?.split(':')[0],
+                    hint: const Text('--'),
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedTime = newValue != null && selectedTime != null
+                            ? '$newValue:${selectedTime!.split(':')[1]}'
+                            : '$newValue:00';
+                      });
+                    },
+                    items: hours.map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                  const Text('時'),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  DropdownButton<String>(
+                    value: selectedTime?.split(':')[1],
+                    hint: const Text('--'),
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedTime = selectedTime != null
+                            ? '${selectedTime!.split(':')[0]}:$newValue'
+                            : '00:$newValue';
+                      });
+                    },
+                    items:
+                        minutes.map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                  const Text('分'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatusHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // ステップの丸とラインを表現
         Expanded(
           child: Row(
             children: [
@@ -312,198 +462,18 @@ class _AiTakuConditionSpecificationState
     );
   }
 
-  Widget _buildDropdown(String label, List<String> options, String selected) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(fontSize: 16)),
-        DropdownButton<String>(
-          value: selected,
-          onChanged: (newValue) {
-            setState(() {
-              // 新しい値をセット
-            });
-          },
-          items: options.map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSelection(String label, List<String> options, String? selected,
-      Function(String) onSelected) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(fontSize: 16)),
-        Wrap(
-          spacing: 8.0,
-          children: options.map((option) {
-            return ChoiceChip(
-              label: Text(option),
-              selected: selected == option,
-              onSelected: (bool selected) {
-                onSelected(option);
-              },
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSwitch(String label, bool value, Function(bool) onChanged) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(fontSize: 16)),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimePicker() {
-    List<String> timeSlots = [];
-    for (int hour = 0; hour < 24; hour++) {
-      for (int minute = 0; minute < 60; minute += 30) {
-        timeSlots.add(
-            '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('希望待ち合わせ時刻', style: TextStyle(fontSize: 16)),
-        DropdownButton<String>(
-          value: selectedTime,
-          hint: Text('選択してください'),
-          onChanged: (newValue) {
-            setState(() {
-              selectedTime = newValue;
-            });
-          },
-          items: timeSlots.map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
   Widget _buildBottomNavigationBar() {
     return BottomAppBar(
-      shape: CircularNotchedRectangle(),
+      shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          IconButton(icon: Icon(Icons.home), onPressed: () {}),
-          IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
-          SizedBox(width: 40), // Middle space for FloatingActionButton
-          IconButton(icon: Icon(Icons.access_time), onPressed: () {}),
-          IconButton(icon: Icon(Icons.phone), onPressed: () {}),
-        ],
-      ),
-    );
-  }
-}
-
-// FareAndRecruitmentウィジェットを追加
-class FareAndRecruitment extends StatelessWidget {
-  final String estimatedFare;
-  final String tripType;
-  final bool isReturnTrip;
-  final VoidCallback onReturnTripSelected;
-
-  const FareAndRecruitment({
-    super.key,
-    required this.estimatedFare,
-    required this.tripType,
-    required this.isReturnTrip,
-    required this.onReturnTripSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '想定運賃・',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                estimatedFare,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  '同じ条件で探しているユーザーが3人います！',
-                  style: TextStyle(fontSize: 14, color: Colors.black),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                if (isReturnTrip) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => OpenForRecruitment(),
-                    ),
-                  );
-                } else if (tripType == '往復') {
-                  onReturnTripSelected();
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => OpenForRecruitment(),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue, // ボタンの背景色
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                isReturnTrip ? '募集する' : (tripType == '往復' ? '復路を指定' : '募集する'),
-                style: const TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
-          ),
+          IconButton(icon: const Icon(Icons.home), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.favorite), onPressed: () {}),
+          const SizedBox(width: 40),
+          IconButton(icon: const Icon(Icons.access_time), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.phone), onPressed: () {}),
         ],
       ),
     );
