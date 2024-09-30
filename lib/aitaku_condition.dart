@@ -43,10 +43,10 @@ class _AiTakuConditionSpecificationState
   bool idVerified = true;
   String? selectedTime;
   String? tripType = '行き';
-  String? departure = '---'; // デフォルト値を '---' に設定
-  String? destination = '---'; // デフォルト値を '---' に設定
+  String? departure = '選択してください'; // 初期値を '選択してください' に設定
+  String? destination = '---';
 
-  List<String> departureOptions = [];
+  List<String> departureOptions = ['選択してください']; // プルダウンの最初に '選択してください' を追加
   List<String> destinationOptions = [];
 
   String eventName = '';
@@ -59,15 +59,11 @@ class _AiTakuConditionSpecificationState
     super.didChangeDependencies();
 
     if (widget.initialTripType == '行き') {
-      departure = widget.initialDeparture ?? '---';
       destination = widget.initialDestination ?? '---';
     } else if (widget.initialTripType == '帰り') {
-      departure = widget.initialDestination ?? '---';
+      departure = widget.initialDestination ?? '選択してください';
       destination = widget.initialDeparture ?? '---';
     }
-
-    departureOptions = [departure!];
-    destinationOptions = [destination!];
 
     fetchEventData(); // イベントデータを取得
   }
@@ -88,10 +84,11 @@ class _AiTakuConditionSpecificationState
         eventDescription = data['artist_name'];
         eventDate = data['start_time'];
         eventLocation = data['event_venue'];
-        departure = data['check_in_place'];
-        destination = data['event_venue'];
 
-        departureOptions = [departure!];
+        // 複数の出発地（check_in_places）を配列に格納
+        departureOptions = ['選択してください']; // 最初に '選択してください' を表示
+        departureOptions.addAll(List<String>.from(data['check_in_places']));
+        destination = data['event_venue'];
         destinationOptions = [destination!];
       });
     }
@@ -110,7 +107,7 @@ class _AiTakuConditionSpecificationState
           TextButton(
             onPressed: () {
               setState(() {
-                departure = '---';
+                departure = '選択してください';
                 destination = '---';
               });
             },
@@ -160,10 +157,6 @@ class _AiTakuConditionSpecificationState
               const SizedBox(height: 12),
               _buildDropdown('目的地', destinationOptions, destination),
               const SizedBox(height: 12),
-
-              // デバッグ用に出発地と目的地を文字列として表示
-              Text('Selected Departure: $departure'),
-              Text('Selected Destination: $destination'),
 
               _buildSelection('お友達の人数', ['なし', '1人', '2人', '3人'], friendCount,
                   (value) => setState(() => friendCount = value),
