@@ -431,9 +431,18 @@ class EventCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AiTakuConditionSpecification(),
-                        settings: RouteSettings(
-                            arguments: event.id.toString()), // int型をStringに変換
+                        builder: (context) => AiTakuConditionSpecification(
+                          eventId: event.id, // eventId を渡す
+                          initialDeparture: null,
+                          initialDestination: null,
+                          initialFriendCount: null,
+                          initialMinPeople: null,
+                          initialBackSeat: null,
+                          initialFemaleOnly: null,
+                          initialIdVerified: null,
+                          initialSelectedTime: null,
+                          initialTripType: null,
+                        ),
                       ),
                     );
                   },

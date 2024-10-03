@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http; // HTTPリクエスト用
+import 'package:http/http.dart' as http;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'home.dart'; // Home画面のインポート
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:convert'; // JSONデコード用
+import 'package:jwt_decoder/jwt_decoder.dart'; // JWTデコード用
 
 final storage = FlutterSecureStorage(); // storageインスタンスの作成
 
@@ -42,20 +44,39 @@ class _SignInState extends State<SignIn> {
       );
 
       if (response.statusCode == 200) {
+        // レスポンスからトークンを取得
+        final data = json.decode(response.body);
+        final String token = data['access_token'];
+
+        // トークンをデコードして user_id を取得
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+        final userId = decodedToken['user_id'];
+        print('サインイントークン: $token');
+        print('デコードされたユーザーID: $userId');
+
+        // トークンと user_id を安全に保存
+        await storage.write(key: 'access_token', value: token);
+        await storage.write(key: 'user_id', value: userId.toString());
+
         // サインイン成功時の処理 (home画面へ遷移)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
               builder: (context) => const HomeScreen()), // Home画面へ遷移
         );
-      } else {
-        // サインイン失敗時の処理 (エラーメッセージ表示)
+      } else if (response.statusCode == 401) {
+        // 認証エラーの場合の処理
         setState(() {
           _errorMessage = 'メールアドレスまたはパスワードが間違っています。';
         });
+      } else {
+        // その他のエラー
+        setState(() {
+          _errorMessage = 'サーバーエラー: ${response.statusCode}';
+        });
       }
     } catch (error) {
-      // エラー処理
+      // ネットワークエラーなど
       setState(() {
         _errorMessage = 'エラーが発生しました: $error';
       });
@@ -143,7 +164,7 @@ class _SignInState extends State<SignIn> {
               ),
 
             // エラーメッセージとサインインボタンの間にスペースを追加
-            SizedBox(height: 20), // ここで高さを指定
+            const SizedBox(height: 20), // ここで高さを指定
 
             // サインインボタン
             SizedBox(

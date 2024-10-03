@@ -67,7 +67,8 @@ class _FilterModalState extends State<FilterModal> {
 
   // イベントカードのタップでaitaku_condition.dartへ遷移
   void _onEventCardTapped(BuildContext context, int eventVenueId,
-      String eventVenue, String tripType) async {
+      String eventVenue, String tripType, int eventId) async {
+    // eventIdを追加
     final checkInPlace = await fetchCheckInPlace(eventVenueId);
 
     if (checkInPlace != null) {
@@ -78,6 +79,7 @@ class _FilterModalState extends State<FilterModal> {
             initialDeparture: tripType == '行き' ? checkInPlace : eventVenue,
             initialDestination: tripType == '行き' ? eventVenue : checkInPlace,
             initialTripType: tripType,
+            eventId: eventId, // 必須パラメータのeventIdを追加
           ),
         ),
       );
