@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // JSONデコード用
-import 'open_for_recruitement.dart';
+import 'open_for_recruitment.dart';
 import 'package:intl/intl.dart'; // 日付フォーマット用
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // トークンを安全に保存するために使用
 
@@ -124,7 +124,15 @@ class _AiTakuConditionSpecificationState
 
       print('トークン: $token, ユーザーID: $userId');
 
-      final requestBody = {
+      // 日本語の旅程タイプを英語に変換
+      final journeyType = tripType == '行き（往路）'
+          ? 'outward'
+          : tripType == '帰り（復路）'
+              ? 'return'
+              : 'round_trip';
+
+      // orderDataとしてリクエストボディを定義
+      final orderData = {
         "user_id": int.parse(userId), // ユーザーIDを追加
         "event_id": widget.eventId, // 渡されたevent_idを使用
         "origin": departure,
@@ -135,12 +143,12 @@ class _AiTakuConditionSpecificationState
         "back_seat_passengers": parseNumber(backSeat!),
         "wants_female": femaleOnly,
         "id_verification_status": idVerified ? "verified" : "unverified",
-        "journey_type": tripType, // 日本語の旅程タイプ（行き（往路）, 帰り（復路）, 往復）
+        "journey_type": journeyType, // 英語の旅程タイプを設定
         "status": "waiting" // ステータスを "waiting" に設定
       };
 
       // リクエストボディの内容をログに出力
-      print('リクエストボディ: ${json.encode(requestBody)}');
+      print('リクエストボディ: ${json.encode(orderData)}');
 
       // POSTリクエストを送信
       final response = await http.post(
@@ -149,13 +157,22 @@ class _AiTakuConditionSpecificationState
           "Content-Type": "application/json",
           "Authorization": "Bearer $token" // トークンをヘッダーに含める
         },
-        body: json.encode(requestBody),
+        body: json.encode(orderData),
       );
 
       if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final orderId = data['order_id']; // orderIdを取得
+
+        // orderIdとorderDataをOpenForRecruitmentに渡して遷移
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => OpenForRecruitment()),
+          MaterialPageRoute(
+            builder: (context) => OpenForRecruitment(
+              orderId: orderId,
+              orderData: orderData, // ここでorderDataを渡す
+            ),
+          ),
         );
       } else {
         print('サーバーレスポンス: ${response.statusCode} ${response.body}');

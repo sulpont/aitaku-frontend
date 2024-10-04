@@ -4,6 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'nav_bar.dart'; // カスタムナビゲーションバーのインポート
 import 'search.dart'; // search.dartのインポート
+import 'dart:convert'; // JSON処理用
+import 'package:jwt_decoder/jwt_decoder.dart'; // JWTデコード用
+import 'reservation_confirmed.dart';
 
 final storage = FlutterSecureStorage();
 
@@ -16,6 +19,55 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0; // 現在のタブの選択状態を管理
+
+  // サーバーから受け取るデータ
+  List<dynamic>? orderDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    checkRequested(); // 画面ロード時にサーバー通信を開始
+  }
+
+  // サーバーから注文詳細を取得する関数
+  Future<void> checkRequested() async {
+    try {
+      // トークンを取得
+      String? token = await storage.read(key: "access_token");
+
+      if (token == null) {
+        throw Exception('認証トークンが見つかりません');
+      }
+
+      // トークンをデコードして user_id を取得
+      Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+      final userId = decodedToken['user_id'];
+
+      final response = await http.get(
+        Uri.parse('http://15.152.251.125:8000/check-requested/${userId}'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token", // トークンをヘッダーに追加
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // レスポンスボディをJSONとしてデコード
+        final data = json.decode(response.body);
+        setState(() {
+          orderDetails = data;
+        });
+      } else {
+        setState(() {
+          orderDetails = null; // データが取れなかった場合
+        });
+      }
+    } catch (e) {
+      setState(() {
+        orderDetails = null; // エラーが発生した場合もnullをセット
+      });
+    }
+  }
 
   Future<void> signOut() async {
     final url = Uri.parse('http://15.152.251.125:8000/signout');
@@ -156,6 +208,16 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         children: [
           const Center(child: Text('ホーム画面のコンテンツをここに配置してください')),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                if (orderDetails != null) _buildRequestedCard(orderDetails),
+                const SizedBox(height: 16),
+                if (orderDetails != null) _buildActionButtons(), // ボタンも非表示
+              ],
+            ),
+          ),
           Positioned(
             top: 50,
             left: 16,
@@ -257,6 +319,144 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRequestedCard(List<dynamic>? orderDetails) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundImage: AssetImage('assets/placeholder.png'),
+                  backgroundColor: Colors.grey[300],
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      orderDetails?[0], // orderDetailsから動的に取得した名前
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 16, color: Colors.yellow),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${orderDetails?[1]} (${orderDetails?[2]} レビュー)', // レビューの評価と件数を動的に表示
+                          style:
+                              const TextStyle(color: Colors.grey, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>> Matching() async {
+    try {
+      // トークンを取得
+      String? token = await storage.read(key: "access_token");
+
+      if (token == null) {
+        throw Exception('認証トークンが見つかりません');
+      }
+
+      // ordersテーブルのstatusを取得するAPIを呼び出す
+      final response = await http.post(
+        Uri.parse('http://15.152.251.125:8000/matching'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token" // トークンをヘッダーに追加
+        },
+        body: jsonEncode({
+          'order_id': orderDetails?[3],
+          'my_order_id': orderDetails?[4],
+        }),
+      );
+
+      // ステータスコードとレスポンスボディをログに出力
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data; // ステータスを返す
+      } else {
+        throw Exception('Failed to fetch order status');
+      }
+    } catch (error) {
+      throw Exception('Error in fetchOrderStatus: $error');
+    }
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () async {
+              // APIを呼び出してstatusを取得
+              Map<String, dynamic> orderDetails = await Matching();
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ReservationConfirmed(
+                      orderId: orderDetails['order_id'],
+                      myOrderId: orderDetails['my_order_id']), // 修正済み
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+            ),
+            child: const Text('承認する'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              // Reject action
+            },
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.red),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+            ),
+            child: const Text('却下する'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              // Cancel action
+            },
+            child: const Text('キャンセルする'),
+          ),
+        ),
+      ],
     );
   }
 }
