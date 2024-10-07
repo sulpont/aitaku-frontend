@@ -77,6 +77,7 @@ class _EventSelectorPageState extends State<EventSelectorPage>
   Future<void> fetchEvents() async {
     setState(() {
       isLoading = true;
+      events.clear(); // リストをクリアしてから新しいデータを追加
     });
 
     try {
@@ -100,7 +101,8 @@ class _EventSelectorPageState extends State<EventSelectorPage>
         final List<dynamic> data =
             json.decode(utf8.decode(response.bodyBytes))['events'];
         setState(() {
-          events = data.map((json) => Event.fromJson(json)).toList();
+          // 重複を防ぐためにSetを使用し、リストに戻す
+          events = data.map((json) => Event.fromJson(json)).toSet().toList();
           sortEvents();
           isLoading = false;
         });
@@ -504,4 +506,15 @@ class Event {
       imageUrl: json['picture_path'] ?? '',
     );
   }
+
+  // 重複削除のための == 演算子と hashCode のオーバーライド
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Event && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

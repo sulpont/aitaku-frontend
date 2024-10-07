@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'nav_bar.dart'; // カスタムナビゲーションバーのインポート
-import 'search.dart'; // search.dartのインポート
-import 'dart:convert'; // JSON処理用
-import 'package:jwt_decoder/jwt_decoder.dart'; // JWTデコード用
+import 'nav_bar.dart';
+import 'search.dart';
+import 'dart:convert';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'reservation_confirmed.dart';
 
 final storage = FlutterSecureStorage();
@@ -18,7 +18,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0; // 現在のタブの選択状態を管理
+  int _selectedIndex = 0;
 
   // サーバーから受け取るデータ
   List<dynamic>? orderDetails;
@@ -26,20 +26,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    checkRequested(); // 画面ロード時にサーバー通信を開始
+    checkRequested();
   }
 
   // サーバーから注文詳細を取得する関数
   Future<void> checkRequested() async {
     try {
-      // トークンを取得
       String? token = await storage.read(key: "access_token");
 
       if (token == null) {
         throw Exception('認証トークンが見つかりません');
       }
 
-      // トークンをデコードして user_id を取得
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       final userId = decodedToken['user_id'];
 
@@ -47,24 +45,23 @@ class _HomeScreenState extends State<HomeScreen> {
         Uri.parse('http://15.152.251.125:8000/check-requested/${userId}'),
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer $token", // トークンをヘッダーに追加
+          "Authorization": "Bearer $token",
         },
       );
 
       if (response.statusCode == 200) {
-        // レスポンスボディをJSONとしてデコード
         final data = json.decode(response.body);
         setState(() {
           orderDetails = data;
         });
       } else {
         setState(() {
-          orderDetails = null; // データが取れなかった場合
+          orderDetails = null;
         });
       }
     } catch (e) {
       setState(() {
-        orderDetails = null; // エラーが発生した場合もnullをセット
+        orderDetails = null;
       });
     }
   }
@@ -81,8 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (response.statusCode == 200) {
-      await storage.delete(key: 'jwt'); // トークンを削除
-      Navigator.pushReplacementNamed(context, '/sign-in'); // サインイン画面へ遷移
+      await storage.delete(key: 'jwt');
+      Navigator.pushReplacementNamed(context, '/sign-in');
     } else {
       _showErrorDialog('サインアウトに失敗しました。もう一度お試しください。');
     }
@@ -99,14 +96,14 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               child: const Text('キャンセル', style: TextStyle(color: Colors.blue)),
               onPressed: () {
-                Navigator.of(context).pop(); // ダイアログを閉じる
+                Navigator.of(context).pop();
               },
             ),
             TextButton(
               child: const Text('サインアウト', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(context).pop();
-                signOut(); // サインアウト処理を実行
+                signOut();
               },
             ),
           ],
@@ -152,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () {
-                      Navigator.pop(context); // サイドメニューを閉じる
+                      Navigator.pop(context);
                     },
                   ),
                 ),
@@ -214,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 if (orderDetails != null) _buildRequestedCard(orderDetails),
                 const SizedBox(height: 16),
-                if (orderDetails != null) _buildActionButtons(), // ボタンも非表示
+                if (orderDetails != null) _buildActionButtons(),
               ],
             ),
           ),
@@ -247,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       bottomNavigationBar: Stack(
-        clipBehavior: Clip.none, // アイコンが上部にはみ出るように設定
+        clipBehavior: Clip.none,
         children: [
           CustomBottomNavBar(
             items: [
@@ -271,8 +268,8 @@ class _HomeScreenState extends State<HomeScreen> {
             centerItem: const SizedBox.shrink(),
           ),
           Positioned(
-            bottom: 40, // アイコンを上部に飛び出すように配置
-            left: MediaQuery.of(context).size.width / 2 - 30, // 中央に配置
+            bottom: 40,
+            left: MediaQuery.of(context).size.width / 2 - 30,
             child: GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -288,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 60,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFFF0059), // 中央アイコンの背景色を変更
+                      color: const Color(0xFFFF0059),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.3),
@@ -298,8 +295,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     child: const Icon(
-                      Icons.local_taxi, // 中央アイコンをタクシーマークに変更
-                      color: Colors.white, // アイコンの色
+                      Icons.local_taxi,
+                      color: Colors.white,
                       size: 40,
                     ),
                   ),
@@ -380,6 +377,10 @@ class _HomeScreenState extends State<HomeScreen> {
         throw Exception('認証トークンが見つかりません');
       }
 
+      // order_id と my_order_id をログに出力して確認
+      print('Request order_id: ${orderDetails?[3]}');
+      print('Request my_order_id: ${orderDetails?[5]}');
+
       // ordersテーブルのstatusを取得するAPIを呼び出す
       final response = await http.post(
         Uri.parse('http://15.152.251.125:8000/matching'),
@@ -389,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         body: jsonEncode({
           'order_id': orderDetails?[3],
-          'my_order_id': orderDetails?[4],
+          'my_order_id': orderDetails?[5],
         }),
       );
 
@@ -411,15 +412,25 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: ElevatedButton(
             onPressed: () async {
-              // APIを呼び出してstatusを取得
+              // APIを呼び出してstatusを取得し、マッチングとメール送信
               Map<String, dynamic> orderDetails = await Matching();
+
+              // メール送信のAPIを呼び出す
+              await http.post(
+                Uri.parse(
+                    'http://15.152.251.125:8000/send-confirmation-email/${orderDetails['order_id']}'),
+                headers: {
+                  "Authorization":
+                      "Bearer ${await storage.read(key: 'access_token')}",
+                },
+              );
 
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ReservationConfirmed(
                       orderId: orderDetails['order_id'],
-                      myOrderId: orderDetails['my_order_id']), // 修正済み
+                      myOrderId: orderDetails['my_order_id']),
                 ),
               );
             },
